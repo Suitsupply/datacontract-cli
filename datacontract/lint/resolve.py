@@ -69,8 +69,13 @@ def resolve_data_contract_from_location(
     location, schema_location: str = None, inline_definitions: bool = False, inline_quality: bool = False
 ) -> DataContractSpecification:
     data_contract_str = read_resource(location)
-    return _resolve_data_contract_from_str(data_contract_str, schema_location, inline_definitions, inline_quality)
-
+    return _resolve_data_contract_from_str(
+        data_contract_str, 
+        schema_location, 
+        inline_definitions, 
+        inline_quality,
+        file_path=location
+    )
 
 def inline_definitions_into_data_contract(spec: DataContractSpecification):
     for model in spec.models.values():
@@ -240,8 +245,117 @@ def _get_quality_ref_file(quality_spec: str | object) -> str | object:
     return quality_spec
 
 
+def inline_models_into_data_contract(spec: DataContractSpecification, file_path: str = None):
+    for model_name, model in spec.models.items():
+        inline_model_into_models(model, file_path)
+
+
+def inline_model_into_models(model, file_path):
+
+    if not model.ref:
+        return
+    
+    model_ref = _resolve_model_ref(model.ref, file_path)
+
+    for field_name in model.model_fields.keys():
+        if field_name in model_ref.model_fields_set and field_name not in model.model_fields_set:
+            setattr(model, field_name, getattr(model_ref, field_name))
+    # extras
+    for extra_field_name, extra_field_value in model_ref.model_extra.items():
+        if extra_field_name not in model.model_extra.keys():
+            setattr(model, extra_field_name, extra_field_value)
+
+def _resolve_model_ref(ref, file_path: str = None) -> DataContractSpecification:
+    logging.info(f"Resolving model ref {ref}")
+
+    if "#" in ref:
+        path, model_path = ref.split("#")
+    else:
+        path, model_path = ref, None
+
+    if path.startswith("http://") or path.startswith("https://"):
+        logging.info(f"Resolving model url {path}")
+        model_str = fetch_resource(path)
+        model_dict = _to_yaml(model_str)
+        model = DataContractSpecification(**model_dict)
+
+        if len(model.models) == 0:
+            raise DataContractException(
+                type="lint",
+                result="failed",
+                name="Check that data contract YAML is valid",
+                reason=f"Cannot resolve reference {ref}, no models found.",
+                engine="datacontract",
+            )
+
+        if model_path: 
+            if model_path in model.models:
+                return model.models[model_path]
+            else:
+                raise DataContractException(
+                    type="lint",
+                    result="failed",
+                    name="Check that data contract YAML is valid",
+                    reason=f"Cannot resolve reference {ref}. Model {model_path} not found.",
+                    engine="datacontract",
+                )
+
+        return list(model.models.values())[0]
+    
+    elif path.startswith("file://"):
+        logging.info(f"Resolving model file path {path}")
+        path = path.replace("file://", "")
+        
+        # Resolve relative path based on the main data contract location
+        if file_path and not os.path.isabs(path):
+            base_dir = os.path.dirname(file_path)
+            path = os.path.join(base_dir, path)
+
+        model_str = _fetch_file(path)
+        
+        model_dict = _to_yaml(model_str)        
+        model = DataContractSpecification(**model_dict)
+        
+        if len(model.models) == 0:
+            raise DataContractException(
+                type="lint",
+                result="failed",
+                name="Check that data contract YAML is valid",
+                reason=f"Cannot resolve reference {ref}, no models found.",
+                engine="datacontract",
+            )
+
+        if model_path: 
+            if model_path in model.models:
+                return model.models[model_path]
+            else:
+                raise DataContractException(
+                    type="lint",
+                    result="failed",
+                    name="Check that data contract YAML is valid",
+                    reason=f"Cannot resolve reference {ref}. Model {model_path} not found.",
+                    engine="datacontract",
+                )
+
+        return list(model.models.values())[0]
+    
+    else:
+        raise DataContractException(
+            type="lint",
+            result="failed",
+            name="Check that data contract YAML is valid",
+            reason=f"Cannot resolve reference {ref}",
+            engine="datacontract",
+        )
+
+
 def _resolve_data_contract_from_str(
-    data_contract_str, schema_location: str = None, inline_definitions: bool = False, inline_quality: bool = False
+    data_contract_str, 
+    schema_location: str = None, 
+    inline_definitions: bool = False, 
+    inline_quality: bool = False, 
+    inline_models: bool = True,
+    file_path: str = None
 ) -> DataContractSpecification:
     yaml_dict = _to_yaml(data_contract_str)
 
@@ -257,6 +371,8 @@ def _resolve_data_contract_from_str(
     data_contract_specification = yaml_dict
     spec = DataContractSpecification(**data_contract_specification)
 
+    if inline_models:
+        inline_models_into_data_contract(spec, file_path)
     if inline_definitions:
         inline_definitions_into_data_contract(spec)
     if spec.quality and inline_quality:

@@ -1,0 +1,33 @@
+{# filepath: dwh_view_yml.jinja #}
+{# This template generates YAML configuration for data warehouse view models based on contract specifications #}
+version: 2
+models:
+  - name: {{ contract.entity }}_view
+    config:
+      alias: {{ contract.entity_label }}
+      {% if contract.config_tags %}
+      tags: {{ contract.config_tags }}
+      {% endif %}
+      {% if contract.config_labels %}
+      labels: {{ contract.config_labels }}
+      {% endif %}
+    description: {{ contract.description }}
+    {% if contract.config_meta %}
+    meta: {{ contract.config_meta }}
+    {% endif %}
+    columns:
+      {% for column in contract.column_data %}
+      - name: {{ column.field_alias }}
+        {% if column.field_description %}
+        description: {{ column.field_description }}
+        {% endif %}
+        data_type: {{ column.field_type }}
+        {% if column.contains_pii %}
+        policy_tags:
+          - {{ "{{ var('policy_tag_pii_prd') if target.name in ['prd'] else var('policy_tag_pii_dev')}}" }}
+        {% endif %}
+        {% if column.security %}
+        meta:
+          security: {{ column.security }}
+        {% endif %}
+      {% endfor %}

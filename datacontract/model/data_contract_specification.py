@@ -188,6 +188,7 @@ class Field(pyd.BaseModel):
 
 
 class Model(pyd.BaseModel):
+    ref: str = pyd.Field(default=None, alias="$ref")
     description: str | None = None
     type: str | None = None
     namespace: str | None = None

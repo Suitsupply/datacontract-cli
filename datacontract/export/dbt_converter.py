@@ -5,6 +5,7 @@ import yaml
 from datacontract.export.exporter import Exporter, _check_models_for_export
 from datacontract.export.sql_type_converter import convert_to_sql_type
 from datacontract.model.data_contract_specification import DataContractSpecification, Field, Model
+import re
 
 
 class DbtExporter(Exporter):
@@ -45,9 +46,17 @@ def to_dbt_staging_sql(data_contract_spec: DataContractSpecification, model_name
     for field_name, field in model_value.fields.items():
         # TODO escape SQL reserved key words, probably dependent on server type
         columns.append(field_name)
+    fields = ", ".join(columns) if len(columns) > 0 else "*"
+
+    if model_value.query is not None:
+        query = model_value.query
+        query = query.replace("{{fields}}", fields)
+        query = re.sub(r"\{\{\s*(\w+)\s*\}\}", r"{{ source('" + id + r"', '\1') }}", query)
+        return query
+
     return f"""
     select
-        {", ".join(columns)}
+        {fields}
     from {{{{ source('{id}', '{model_name}') }}}}
 """
 

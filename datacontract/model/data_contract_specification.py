@@ -191,6 +191,7 @@ class Model(pyd.BaseModel):
     ref: str = pyd.Field(default=None, alias="$ref")
     description: str | None = None
     type: str | None = None
+    query: str | None = None
     namespace: str | None = None
     title: str | None = None
     fields: Dict[str, Field] = {}

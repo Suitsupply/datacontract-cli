@@ -10,15 +10,12 @@ info:
 #    url:
 #    email:
 
-
-### servers
-
-#servers:
-#  production:
-#    type: s3
-#    location: s3://
-#    format: parquet
-#    delimiter: new_line
+# servers:
+#   landing:
+#     type: bigquery
+#     environment: prd
+#     project: pj-suitsupply-data-lz-prd
+#     dataset: landing
 
 ### terms
 
@@ -27,7 +24,6 @@ info:
 #  limitations:
 #  billing:
 #  noticePeriod:
-
 
 ### models
 
@@ -39,11 +35,32 @@ info:
 #       my_field:
 #         type:
 #         description:
-
+#
+#   my_model_ref:
+#     $ref: "file:/path/datacontract.yml#model_ref"
+#
+#   my_model_query:
+#     type: view
+#     description: "Query based view"
+#     query: |
+#       with my_model as (
+#         select
+#           *
+#         from {{my_model}}
+#       )
+#       select
+#         {{fields}}
+#       from my_model
 
 ### definitions
 
 # definitions:
+#   _loaded_at:
+#     type: timestamp
+#     description: "Timestamp when the record was loaded"
+#     lineage:
+#       transformationDescription: timestamp('1900-01-01')
+#
 #   my_field:
 #     domain:
 #     name:
@@ -53,7 +70,6 @@ info:
 #     example:
 #     pii:
 #     classification:
-
 
 ### servicelevels
 

@@ -31,29 +31,6 @@ DATACONTRACT_TYPES = [
 ]
 
 
-class DBTFilter(pyd.BaseModel):
-    class Config:
-        extra = 'forbid' 
-    field: str
-    value: str
-    operator: str | None = '='
-    dev_only: bool = False
-
-class DBTField(pyd.BaseModel):
-    alias: str | None = None
-    enabled: bool | None = True
-    index: int | None = -1
-    calculated: bool | None = False
-    pivot: bool | None = False
-    condition: str | None = None
-    base_field: str | None = None    
-    security: str | None = None
-    
-    model_config = pyd.ConfigDict(
-        extra="forbid",
-    )
-
-
 class Contact(pyd.BaseModel):
     name: str | None = None
     url: str | None = None
@@ -191,6 +168,7 @@ class Field(pyd.BaseModel):
     enum: List[str] | None = []
     tags: List[str] | None = []
     links: Dict[str, str] = {}
+    config: Dict[str, Any] | None = None
     fields: Dict[str, "Field"] = {}
     items: "Field" = None
     keys: "Field" = None
@@ -203,31 +181,11 @@ class Field(pyd.BaseModel):
     )
     examples: List[Any] | None = None
     quality: List[Quality] | None = []
-    config: Dict[str, Any] | None = None
-
-    dbt: DBTField | None = None
 
     model_config = pyd.ConfigDict(
         extra="allow",
     )
 
-class DBTModel(pyd.BaseModel):
-    alias: str | None = None
-    enabled: bool | None = True
-    data_type_overwrite: bool | None = False
-    snapshot: bool | None = False
-    deduplicate: bool | None = False
-    order_by: str | None = None
-    incremental: bool | None = False
-    cluster_by: List[str] | None = []
-    filter: List[DBTFilter] | None = []
-    security: str | None = None
-    roles: List[str] | None = []
-    tags: List[str] | None = []
-
-    model_config = pyd.ConfigDict(
-        extra="forbid",
-    )
 
 class Model(pyd.BaseModel):
     ref: str = pyd.Field(default=None, alias="$ref")
@@ -235,15 +193,14 @@ class Model(pyd.BaseModel):
     type: str | None = None
     namespace: str | None = None
     title: str | None = None
-    fields: Dict[str, Field] = {}
     quality: List[Quality] | None = []
     primaryKey: List[str] | None = []
     examples: List[Any] | None = None
     config: Dict[str, Any] = None
     tags: List[str] | None = None
-    
-    dbt: DBTModel | None = None
     query: str | None = None
+    fields: Dict[str, Field] = {}
+    ephemerals: Dict[str, Field] = {}
 
     model_config = pyd.ConfigDict(
         extra="allow",
@@ -351,7 +308,6 @@ class DataContractSpecification(pyd.BaseModel):
     servicelevels: ServiceLevel | None = None
     links: Dict[str, str] = {}
     tags: List[str] = []
-    dbt: DBTField | None = None
 
     @classmethod
     def from_file(cls, file):

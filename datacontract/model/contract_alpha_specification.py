@@ -1,6 +1,7 @@
 from __future__ import annotations
 from pydantic import BaseModel, FieldValidationInfo, model_validator
 from typing import Optional
+from typing import Any, Dict
 from enum import Enum
 import yaml
 import os
@@ -84,6 +85,7 @@ class Field(BaseModel):
     base_field: Optional[str] = None
     contains_pii: Optional[bool] = False
     security: Optional[str] = None
+    source_type: Dict[str, Any] | None = None
 
 class Filter(BaseModel):
     class Config:

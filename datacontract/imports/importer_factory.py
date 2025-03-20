@@ -114,3 +114,8 @@ importer_factory.register_lazy_importer(
     module_path="datacontract.imports.contract_alpha_importer",
     class_name="ContractAlphaImporter",
 )
+importer_factory.register_lazy_importer(
+    name=ImportFormat.server,
+    module_path="datacontract.imports.server_importer",
+    class_name="ServerImporter",
+)

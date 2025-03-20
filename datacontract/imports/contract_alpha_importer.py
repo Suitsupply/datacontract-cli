@@ -35,6 +35,12 @@ def import_fields_alpha(
                 field.primary_key = True
 
             field.type = map_type_from_bigquery(field_alpha.type)
+            if field.type == "timestamp_ntz":
+                field.format = "datetime"
+
+            if field_alpha.source_type:
+                for source_type_key, source_type_value in field_alpha.source_type.items():
+                    config[source_type_key] = source_type_value
             
             if field_alpha.type in ("RECORD", "JSON"):
 
@@ -139,7 +145,11 @@ def map_type_from_bigquery(bigquery_type_str: str):
         return "bytes"
     elif bigquery_type_str == "INTEGER":
         return "int"
+    elif bigquery_type_str == "BIGINT":
+        return "bigint"
     elif bigquery_type_str == "INT64":
+        return "bigint"
+    elif bigquery_type_str == "BIGINT":
         return "bigint"
     elif bigquery_type_str == "FLOAT":
         return "float"
@@ -154,7 +164,7 @@ def map_type_from_bigquery(bigquery_type_str: str):
     elif bigquery_type_str == "TIME":
         return "timestamp_ntz"
     elif bigquery_type_str == "DATETIME":
-        return "timestamp"
+        return "timestamp_ntz"
     elif bigquery_type_str == "NUMERIC":
         return "numeric"
     elif bigquery_type_str == "BIGNUMERIC":
@@ -162,9 +172,9 @@ def map_type_from_bigquery(bigquery_type_str: str):
     elif bigquery_type_str == "GEOGRAPHY":
         return "object"
     elif bigquery_type_str == "JSON":
-        return "object"
+        return "record"
     elif bigquery_type_str == "RECORD":
-        return "object"
+        return "record"
     else:
         raise DataContractException(
             type="schema",
@@ -234,7 +244,7 @@ def import_contract(data_contract_specification: DataContractSpecification, sour
             title: Model(
                 description=description,
                 type=type,
-                title=title,
+                title=f"{schema_alpha.product}__{schema_alpha.entity}",
                 primaryKey=primary_keys,
                 fields=fields,
                 ephemerals=ephemerals,

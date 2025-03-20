@@ -33,6 +33,7 @@ class ImportFormat(str, Enum):
     parquet = "parquet"
     csv = "csv"
     contract_alpha = "contract_alpha"
+    server_direct = "server_direct"
 
     @classmethod
     def get_supported_formats(cls):

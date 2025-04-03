@@ -19,6 +19,10 @@ from datacontract.integration.datamesh_manager import (
 from datacontract.lint.resolve import resolve_data_contract_dict
 from datacontract.output.output_format import OutputFormat
 from datacontract.output.test_results_writer import write_test_result
+from rich.traceback import install
+
+# Disable showing locals in tracebacks
+install(show_locals=False)
 
 console = Console()
 
@@ -32,6 +36,7 @@ app = typer.Typer(
     cls=OrderedCommands,
     no_args_is_help=True,
     add_completion=False,
+    pretty_exceptions_show_locals=False
 )
 
 
@@ -60,6 +65,12 @@ def common(
     detect breaking changes, and export to different formats.
     """
     pass
+
+
+@app.command()
+def hola(
+):
+    console.print(f"Hola!")
 
 
 @app.command()

@@ -1,6 +1,6 @@
 from datacontract.imports.importer import Importer
-from datacontract.model.data_contract_specification import DataContractSpecification, Field, Info, Model, Freshness, Retention, ServiceLevel
-from datacontract.model.contract_alpha_specification import ConfigContract as ContractAlpha, Field as FieldAlpha, Filter as FilterAlpha
+from datacontract.model.data_contract_specification import DataContractSpecification, Model, Field, FieldConfigDBT, ModelConfigDBT, FilterDBT, Info, ServiceLevel, Freshness, Retention
+from datacontract.model.contract_alpha_specification import ConfigContract as ContractAlpha, Field as FieldAlpha
 from datacontract.model.exceptions import DataContractException
 
 
@@ -21,7 +21,9 @@ def import_fields_alpha(
     for field_alpha in fields_alpha:
 
         field = Field()
-        config = {}
+        field.config = {}
+        field.dbt = FieldConfigDBT()
+
         field_title = field_alpha.alias if field_alpha.alias is not None else field_alpha.name
         
         if not field_alpha.calculated:
@@ -32,7 +34,7 @@ def import_fields_alpha(
             if field_alpha.mode == 'REQUIRED':
                 field.required = True
             if field_title in primary_keys:
-                field.primary_key = True
+                field.primaryKey = True
 
             field.type = map_type_from_bigquery(field_alpha.type)
             if field.type == "timestamp_ntz":
@@ -40,14 +42,13 @@ def import_fields_alpha(
 
             if field_alpha.source_type:
                 for source_type_key, source_type_value in field_alpha.source_type.items():
-                    config[source_type_key] = source_type_value
-            
+                    field.config[source_type_key] = source_type_value
+
             if field_alpha.type in ("RECORD", "JSON"):
 
                 if field_alpha.type == "JSON":
-                    config["bigqueryType"] = "json"
-                config['dbt'] = {}
-
+                    field.config['bigqueryType'] = "json"
+            
                 if field_alpha.repeated:
                     field.type = "array"
                     field.items = Field()
@@ -57,41 +58,42 @@ def import_fields_alpha(
 
                     # Unpack single record in array
                     if field_alpha.index >= 0:
-                        config['dbt']['index'] = field_alpha.index
+                        field.dbt.index = field_alpha.index
 
                     # Pivot array with calculated fields (ephemerals)
                     if field_alpha.pivot:
-                        config['dbt']['enabled'] = False
-                        config['dbt']['pivot'] = True
+                        field.dbt.enabled = False
+                        field.dbt.pivot = True
 
-                        ephemeral = Field()
+                        if imported_ephemerals.get(field_alpha.name) is None:
+                            ephemeral = Field()
+                        else:
+                            ephemeral = imported_ephemerals[field_alpha.name].model_copy()
+
                         ephemeral.title = field.title
                         ephemeral.type = "record"
 
-                        ephemeral.config = {}
-                        if field_alpha.type == "JSON":
-                            ephemeral.config["bigqueryType"] = "json"                        
-                        ephemeral.config['dbt'] = {}
-                        ephemeral.config['dbt']['pivot'] = True
+                        ephemeral.dbt = FieldConfigDBT()
+                        ephemeral.dbt.pivot = True                        
 
-                        nested_ephemerals = {}
+                        if field_alpha.type == "JSON":
+                            ephemeral.config = {}
+                            ephemeral.config['bigqueryType'] = "json"
                         
                         for nested_field in field_alpha.fields:
                             nested_ephemeral = Field()
                             nested_field_title = field_alpha.name if nested_field.alias is None else nested_field.alias
                             nested_ephemeral.type = map_type_from_bigquery(nested_field.type)
                             
-                            nested_ephemeral.config = {}
-                            nested_ephemeral.config['dbt'] = {}
-                            nested_ephemeral.config['dbt']['pivot_key_field'] = nested_field.name
-                            nested_ephemeral.config['dbt']['pivot_key_filter'] = nested_field.condition
-                            nested_ephemeral.config['dbt']['pivot_value_field'] = nested_field.base_field
+                            nested_ephemeral.dbt = FieldConfigDBT()                            
+                            nested_ephemeral.dbt.pivotKeyField = nested_field.base_field
+                            nested_ephemeral.dbt.pivotKeyFilter = nested_field.condition
+                            nested_ephemeral.dbt.pivotValueField = nested_field.name
                             if nested_field.security:
-                                nested_ephemeral.config['security'] = nested_field.security
+                                nested_ephemeral.dbt.security = nested_field.security
 
-                            nested_ephemerals[nested_field_title] = nested_ephemeral
+                            ephemeral.fields[nested_field_title] = nested_ephemeral
 
-                        ephemeral.fields = nested_ephemerals
                         imported_ephemerals[field_alpha.name] = ephemeral
 
                 else:
@@ -99,14 +101,14 @@ def import_fields_alpha(
                     field.fields = import_fields_alpha(field_alpha.fields, imported_ephemerals, primary_keys)
 
             if field_alpha.security:
-                config['security'] = field_alpha.security
+                field.dbt.security = field_alpha.security
 
-            if 'dbt' in config.keys() and config['dbt'] == {}:
-                config.pop('dbt')
+            if field.dbt == FieldConfigDBT():
+                field.dbt = None
 
-            if config != {}:
-                field.config = config
-
+            if field.config == {}:
+                field.config = None
+            
             imported_fields[field_alpha.name] = field
         
         # Add calculated fields
@@ -126,14 +128,16 @@ def import_fields_alpha(
             
             ephemerals = import_fields_alpha([field_alpha], imported_ephemerals, primary_keys)
             ephemeral = ephemerals[field_alpha.name]
-
+            
             if not ephemeral.config:
                 ephemeral.config = {}
-            if not ephemeral.config.get('dbt'):
-                ephemeral.config['dbt'] = {}
-            ephemeral.config['dbt']['calculation'] = calculation
 
+            if not ephemeral.dbt:
+                ephemeral.dbt = FieldConfigDBT()
+
+            ephemeral.dbt.calculation = calculation
             imported_ephemerals[field_alpha.alias] = ephemeral
+
 
     return imported_fields
 
@@ -189,87 +193,95 @@ def import_contract(data_contract_specification: DataContractSpecification, sour
     if data_contract_specification.models is None:
         data_contract_specification.models = {}
 
-    schema_alpha = ContractAlpha.from_file(source)
+    model_alpha = ContractAlpha.from_file(source)
 
     ephemerals = {}
-    config = {}
-    config['dbt'] = {}
+    model_dbt = ModelConfigDBT()
 
-    title = schema_alpha.entity if schema_alpha.identifier is None else schema_alpha.identifier
-    description = schema_alpha.description
-    primary_keys = schema_alpha.source_schema.primary_keys
+    title = model_alpha.entity if model_alpha.identifier is None else model_alpha.identifier
+    description = model_alpha.description
+    primary_keys = model_alpha.source_schema.primary_keys
     type = "table"
 
-    fields = import_fields_alpha(schema_alpha.source_schema.fields, ephemerals, primary_keys)
-    
+    fields = import_fields_alpha(model_alpha.source_schema.fields, ephemerals, primary_keys)
+
     filters = []
-    for filter in schema_alpha.source_schema.filters:
-        
-        schema_filter = {}
-        schema_filter['field'] = filter.field
-        schema_filter['value'] = filter.value
-        schema_filter['operator'] = filter.operator
+    for filter in model_alpha.source_schema.filters:
+
+        config_filter = FilterDBT()
+        config_filter.field = filter.field
+        config_filter.value = filter.value
+        config_filter.operator = filter.operator
         if filter.dev_only:
-            schema_filter['dev_only'] = filter.dev_only
-        filters.append(schema_filter)
+            config_filter.dev_only = filter.dev_only
+        filters.append(config_filter)
 
     if filters:
-        config['dbt']['filters'] = filters
+        model_dbt.filters = filters
 
-    if schema_alpha.refresh_policy.data_type_overwrite == 'ENABLED':
-        config['dbt']['data_type_overwrite'] = True
-    if schema_alpha.refresh_policy.snapshot_status == 'ENABLED':
-        config['dbt']['snapshot'] = True
-    if schema_alpha.refresh_policy.deduplication == 'ENABLED':
-        config['dbt']['deduplication'] = True
-    if schema_alpha.source_schema.order_by:
-        config['dbt']['order_by'] = schema_alpha.source_schema.order_by
-    if schema_alpha.refresh_policy.cluster_by:
-        config['dbt']['cluster_by'] = schema_alpha.refresh_policy.cluster_by
-    if schema_alpha.refresh_policy.refresh_mode == 'INCREMENTAL':
-        config['dbt']['incremental'] = True
-    if schema_alpha.security:
-        config['dbt']['security'] = schema_alpha.security
+    if model_alpha.refresh_policy.data_type_overwrite == 'ENABLED':
+        model_dbt.typeOverwrite = True
+    if model_alpha.refresh_policy.snapshot_status == 'ENABLED':
+        model_dbt.snapshot = True
+    if model_alpha.refresh_policy.deduplication == 'ENABLED':
+        model_dbt.deduplicate = True
+    if model_alpha.source_schema.order_by:
+        model_dbt.orderBy = model_alpha.source_schema.order_by
+    if model_alpha.refresh_policy.cluster_by:
+        model_dbt.clusterBy = model_alpha.refresh_policy.cluster_by
+    if model_alpha.refresh_policy.refresh_mode == 'INCREMENTAL':
+        model_dbt.incremental = True
+    if model_alpha.security:
+        model_dbt.security = model_alpha.security
+    if model_alpha.refresh_policy.partition_expiration_days:
+        model_dbt.partitionExpirationDays = model_alpha.refresh_policy.partition_expiration_days
+    if model_alpha.refresh_policy.recency_threshold:
+        model_dbt.recencyThreshold = model_alpha.refresh_policy.recency_threshold
+    if model_alpha.source_schema.recency_validation:
+        model_dbt.recencyField = model_alpha.source_schema.recency_validation
+    else:
+        model_dbt.recencyField = '_loaded_at'    
 
-    if config in ({}, {'dbt': {}}):
-        config = None
+    servicelevels=ServiceLevel()
+
+    if model_alpha.refresh_policy.recency_threshold and model_alpha.refresh_policy.recency_threshold > 0:
+        freshness = Freshness()
+        freshness.threshold = f"{model_alpha.refresh_policy.recency_threshold}D"
+        freshness.timestampField = model_alpha.source_schema.recency_validation
+        servicelevels.freshness = freshness
+
+    if model_alpha.refresh_policy.partition_expiration_days and model_alpha.refresh_policy.partition_expiration_days > 0:
+        retention = Retention()
+        retention.period = f"{model_alpha.refresh_policy.partition_expiration_days}D"
+        retention.timestampField = model_alpha.source_schema.recency_validation
+        servicelevels.retention = retention
+
 
     data_contract_specification = DataContractSpecification(
-        id=f"{schema_alpha.product}__{schema_alpha.entity}",
+        dataContractSpecification="1.1.0",
+        id=f"{model_alpha.entity}",
         info=Info(
-            title=schema_alpha.entity,
+            title=model_alpha.entity,
             version="1.0.0",
         ),
         models={
             title: Model(
                 description=description,
                 type=type,
-                title=f"{schema_alpha.product}__{schema_alpha.entity}",
+                title=f"{model_alpha.entity}",
                 primaryKey=primary_keys,
                 fields=fields,
-                ephemerals=ephemerals,
             )
         },
-        
-        servicelevels=ServiceLevel(),
     )
 
-    if config not in ({}, {'dbt': {}}):
-        data_contract_specification.models[title].config = config
+    if model_dbt != ModelConfigDBT():
+        data_contract_specification.models[title].dbt = model_dbt
 
-    if schema_alpha.refresh_policy.recency_threshold and schema_alpha.refresh_policy.recency_threshold > 0:
-        freshness = Freshness()
-        freshness.threshold = f"{schema_alpha.refresh_policy.recency_threshold}d"
-        freshness.timestampField = schema_alpha.source_schema.recency_validation
-        data_contract_specification.servicelevels.freshness = freshness
-
-    if schema_alpha.refresh_policy.partition_expiration_days and schema_alpha.refresh_policy.partition_expiration_days > 0:
-        retention = Retention()
-        retention.period = f"{schema_alpha.refresh_policy.partition_expiration_days}d"
-        retention.timestampField = schema_alpha.source_schema.recency_validation
-        data_contract_specification.servicelevels.retention = retention
-
-    if data_contract_specification.servicelevels == ServiceLevel():
-        data_contract_specification.servicelevels = None
+    if servicelevels != ServiceLevel():
+        data_contract_specification.servicelevels = servicelevels
+    
+    if ephemerals != {}:
+        data_contract_specification.models[title].ephemerals = ephemerals
 
     return data_contract_specification

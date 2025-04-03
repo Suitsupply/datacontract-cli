@@ -1,5 +1,7 @@
+from datacontract.model.data_contract_specification import Model
 
-def to_dbt_bigquery_raw_sql(contract):
+
+def raw_contract_sql(data_contract_model: Model) -> str:
 
     metadata_fields = ''
     snapshot_skip_fields = ''
@@ -8,38 +10,39 @@ def to_dbt_bigquery_raw_sql(contract):
     incremental_filter = ''
     deduplication_filter = ''
 
-    for contract_field in contract.column_data:
-        if contract_field.field_category == 'metadata':
+    for contract_field_key, contract_field in data_contract_model.fields.items():
+        
+        if contract_field.config['category'] == 'metadata':
             if metadata_fields:
                 metadata_fields += '\n        ,'
-            metadata_fields += f'{contract_field.field_source:<54} as {contract_field.field_alias}'  
+            metadata_fields += f'{contract_field.config['source']:<54} as {contract_field.title}'  
         
-        elif contract_field.field_category == 'data':
+        elif contract_field.config['category'] == 'data':
             if fields:
                 fields += '\n        ,'
-            fields += f'{contract_field.field_source:<54} as {contract_field.field_alias}'
+            fields += f'{contract_field.config['source']:<54} as {contract_field.title}'
         
-        elif contract_field.field_category == 'primary_key':
-            primary_key = f',{contract_field.field_source} as {contract_field.field_alias}'
+        elif contract_field.config['category'] == '_primary_key':
+            primary_key = f',{contract_field.config['source']} as {contract_field.title}'
 
-        if contract_field.field_type == 'JSON':
+        if contract_field.config.get('bigqueryType', '').lower() == 'json':
             if snapshot_skip_fields:
                 snapshot_skip_fields += ','
-            snapshot_skip_fields += contract_field.field_alias
+            snapshot_skip_fields += contract_field.title
 
     config_post_hook = ""
-    if contract.snapshot_status == 'ENABLED':
+    if data_contract_model.dbt.snapshot:
         config_post_hook = f',post_hook="{{{{create_external_snapshot(this, \'{snapshot_skip_fields}\' )}}}}"'
 
     partition_expiration = ""
-    if contract.partition_expiration_days > 0:
-        partition_expiration = f"\n\t\t\t\t,partition_expiration_days = {contract.partition_expiration_days}"
+    if data_contract_model.dbt.partitionExpirationDays:
+        partition_expiration = f"\n\t\t\t\t,partition_expiration_days = {data_contract_model.dbt.partitionExpirationDays}"
 
-    if primary_key and contract.deduplication == 'ENABLED':
-        deduplication_filter = f"qualify row_number()over(partition by _primary_key order by {contract.order_by} desc) = 1"
+    if primary_key and data_contract_model.dbt.deduplicate:
+        deduplication_filter = f"qualify row_number()over(partition by _primary_key order by {data_contract_model.dbt.orderBy} desc) = 1"
 
-    if  contract.refresh_mode == 'INCREMENTAL' and \
-        contract.has_primary_key:
+    if  data_contract_model.dbt.incremental and \
+        data_contract_model.fields['_primary_key'].config['source']:
         
         config_block = f"""
 
@@ -58,7 +61,7 @@ def to_dbt_bigquery_raw_sql(contract):
                     'data_type': 'timestamp',
                     'granularity': 'day'
                 }}
-                ,cluster_by = {contract.cluster_by}
+                ,cluster_by = {data_contract_model.dbt.clusterBy}
                 ,contract = {{
                     "enforced":True
                 }}
@@ -86,7 +89,7 @@ def to_dbt_bigquery_raw_sql(contract):
         {{% endif -%}}
         """
         
-        if contract.sql_where:
+        if data_contract_model.config['sql_where']:
             incremental_filter = f"{{% if is_incremental() %}}\n    and _loaded_at > TIMESTAMP('{{{{ max_ts }}}}')\n    {{% endif %}}"
         else:
             incremental_filter = f"{{% if is_incremental() %}}\n    where _loaded_at > TIMESTAMP('{{{{ max_ts }}}}')\n    {{% endif %}}"
@@ -111,15 +114,15 @@ def to_dbt_bigquery_raw_sql(contract):
          {metadata_fields}
 
         --Source Data
-        ,{fields}        
-        from {{{{ source('{contract.dataset}', '{contract.product}__{contract.entity}') }}}}
-        {contract.sql_join}
+        {',' if metadata_fields else ''}{fields}        
+        from {{{{ source('{data_contract_model.config['source_dataset']}', '{data_contract_model.config['product']}__{data_contract_model.config['entity']}') }}}}
+        {''.join(data_contract_model.config['sql_joins'])}
     )
     select
         *
     {primary_key}
     from _source_query
-    {contract.sql_where}
+    {data_contract_model.config['sql_where']}
     {incremental_filter}
     {deduplication_filter}
     """

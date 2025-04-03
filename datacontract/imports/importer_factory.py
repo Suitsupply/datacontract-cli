@@ -119,3 +119,8 @@ importer_factory.register_lazy_importer(
     module_path="datacontract.imports.server_direct_importer",
     class_name="ServerDirectImporter",
 )
+importer_factory.register_lazy_importer(
+    name=ImportFormat.dbt_specification,
+    module_path="datacontract.imports.dbt_specification_importer",
+    class_name="DbtSpecificationImporter",
+)

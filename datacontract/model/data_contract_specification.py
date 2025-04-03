@@ -1,5 +1,5 @@
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Union
 
 import pydantic as pyd
 import yaml
@@ -31,6 +31,41 @@ DATACONTRACT_TYPES = [
 ]
 
 
+
+class FilterDBT(pyd.BaseModel):
+    field: str | None = None
+    value: str | None = None
+    operator: str = '='
+    dev_only: bool | None = None
+
+
+class FieldConfigDBT(pyd.BaseModel):
+    enabled: bool | None = None
+    index: int | None = -1
+    calculation: str | None = None
+    pivot: bool | None = None
+    pivotKeyField: str | None = None
+    pivotKeyFilter: str | None = None
+    pivotValueField: str | None = None
+    security: str | None = None
+    bigqueryType: str | None = None
+
+
+class ModelConfigDBT(pyd.BaseModel):
+    enabled: bool | None = None
+    filters: List[FilterDBT] = []
+    typeOverwrite: bool | None = None
+    snapshot: bool | None = None
+    deduplicate: bool | None = None
+    orderBy: str | None = None
+    clusterBy: List[str] = []
+    incremental: bool | None = None
+    security: str | None = None
+    partitionExpirationDays: int | None = None
+    recencyThreshold: int | None = None
+    recencyField: str | None = None
+
+
 class Contact(pyd.BaseModel):
     name: str | None = None
     url: str | None = None
@@ -44,37 +79,6 @@ class Contact(pyd.BaseModel):
 class ServerRole(pyd.BaseModel):
     name: str | None = None
     description: str | None = None
-    model_config = pyd.ConfigDict(
-        extra="allow",
-    )
-
-
-class Server(pyd.BaseModel):
-    type: str | None = None
-    description: str | None = None
-    environment: str | None = None
-    format: str | None = None
-    project: str | None = None
-    dataset: str | None = None
-    path: str | None = None
-    delimiter: str | None = None
-    endpointUrl: str | None = None
-    location: str | None = None
-    account: str | None = None
-    database: str | None = None
-    schema_: str | None = pyd.Field(default=None, alias="schema")
-    host: str | None = None
-    port: int | None = None
-    catalog: str | None = None
-    topic: str | None = None
-    http_path: str | None = None  # Use ENV variable
-    token: str | None = None  # Use ENV variable
-    dataProductId: str | None = None
-    outputPortId: str | None = None
-    driver: str | None = None
-    storageAccount: str | None = None
-    roles: List[ServerRole] = None
-
     model_config = pyd.ConfigDict(
         extra="allow",
     )
@@ -168,7 +172,8 @@ class Field(pyd.BaseModel):
     enum: List[str] | None = []
     tags: List[str] | None = []
     links: Dict[str, str] = {}
-    config: Dict[str, Any] | None = None
+    config: Dict[str, Any] = None
+    dbt: FieldConfigDBT | None = None
     fields: Dict[str, "Field"] = {}
     items: "Field" = None
     keys: "Field" = None
@@ -187,6 +192,37 @@ class Field(pyd.BaseModel):
     )
 
 
+class Server(pyd.BaseModel):
+    type: str | None = None
+    description: str | None = None
+    environment: str | None = None
+    format: str | None = None
+    project: str | None = None
+    dataset: str | None = None
+    path: str | None = None
+    delimiter: str | None = None
+    endpointUrl: str | None = None
+    location: str | None = None
+    account: str | None = None
+    database: str | None = None
+    schema_: str | None = pyd.Field(default=None, alias="schema")
+    host: str | None = None
+    port: int | None = None
+    catalog: str | None = None
+    topic: str | None = None
+    http_path: str | None = None  # Use ENV variable
+    token: str | None = None  # Use ENV variable
+    dataProductId: str | None = None
+    outputPortId: str | None = None
+    driver: str | None = None
+    storageAccount: str | None = None
+    roles: List[ServerRole] = None
+    ephemerals: Dict[str, Field] = {}    
+
+    model_config = pyd.ConfigDict(
+        extra="allow",
+    )
+
 class Model(pyd.BaseModel):
     ref: str = pyd.Field(default=None, alias="$ref")
     description: str | None = None
@@ -196,11 +232,12 @@ class Model(pyd.BaseModel):
     quality: List[Quality] | None = []
     primaryKey: List[str] | None = []
     examples: List[Any] | None = None
+    dbt: ModelConfigDBT | None = None
     config: Dict[str, Any] = None
     tags: List[str] | None = None
     query: str | None = None
     fields: Dict[str, Field] = {}
-    ephemerals: Dict[str, Field] = {}
+    ephemerals: Dict[str, Field] = {}    
 
     model_config = pyd.ConfigDict(
         extra="allow",

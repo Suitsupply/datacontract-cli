@@ -724,16 +724,20 @@
           "type": "object"
         },
         "config": {
+          "default": null,
+          "title": "Config",
+          "type": "object"
+        },
+        "dbt": {
           "anyOf": [
             {
-              "type": "object"
+              "$ref": "#/$defs/FieldConfigDBT"
             },
             {
               "type": "null"
             }
           ],
-          "default": null,
-          "title": "Config"
+          "default": null
         },
         "fields": {
           "additionalProperties": {
@@ -820,6 +824,167 @@
         }
       },
       "title": "Field",
+      "type": "object"
+    },
+    "FieldConfigDBT": {
+      "properties": {
+        "enabled": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Enabled"
+        },
+        "index": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": -1,
+          "title": "Index"
+        },
+        "calculation": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Calculation"
+        },
+        "pivot": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pivot"
+        },
+        "pivotKeyField": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pivotkeyfield"
+        },
+        "pivotKeyFilter": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pivotkeyfilter"
+        },
+        "pivotValueField": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pivotvaluefield"
+        },
+        "security": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Security"
+        },
+        "bigqueryType": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bigquerytype"
+        }
+      },
+      "title": "FieldConfigDBT",
+      "type": "object"
+    },
+    "FilterDBT": {
+      "properties": {
+        "field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Field"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "operator": {
+          "default": "=",
+          "title": "Operator",
+          "type": "string"
+        },
+        "dev_only": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dev Only"
+        }
+      },
+      "title": "FilterDBT",
       "type": "object"
     },
     "Frequency": {
@@ -1149,6 +1314,17 @@
           "default": null,
           "title": "Examples"
         },
+        "dbt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ModelConfigDBT"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "config": {
           "default": null,
           "title": "Config",
@@ -1199,6 +1375,136 @@
         }
       },
       "title": "Model",
+      "type": "object"
+    },
+    "ModelConfigDBT": {
+      "properties": {
+        "enabled": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Enabled"
+        },
+        "filters": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/FilterDBT"
+          },
+          "title": "Filters",
+          "type": "array"
+        },
+        "typeOverwrite": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Typeoverwrite"
+        },
+        "snapshot": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Snapshot"
+        },
+        "deduplicate": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Deduplicate"
+        },
+        "orderBy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Orderby"
+        },
+        "clusterBy": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Clusterby",
+          "type": "array"
+        },
+        "incremental": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Incremental"
+        },
+        "security": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Security"
+        },
+        "partitionExpirationDays": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Partitionexpirationdays"
+        },
+        "recencyThreshold": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Recencythreshold"
+        }
+      },
+      "title": "ModelConfigDBT",
       "type": "object"
     },
     "Quality": {
@@ -1711,6 +2017,14 @@
           },
           "title": "Roles",
           "type": "array"
+        },
+        "ephemerals": {
+          "additionalProperties": {
+            "$ref": "#/$defs/Field"
+          },
+          "default": {},
+          "title": "Ephemerals",
+          "type": "object"
         }
       },
       "title": "Server",

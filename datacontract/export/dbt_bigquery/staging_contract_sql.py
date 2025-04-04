@@ -6,7 +6,7 @@ def staging_contract_sql(data_contract_model: Model) -> str:
     config_tags = f",tags={data_contract_model.tags}"
     config_labels = ""
     if data_contract_model.config:
-        config_labels = f",labels={data_contract_model.config}"
+        config_labels = f",labels={data_contract_model.config['labels']}"
 
     fields = ""
     for field_key, field in data_contract_model.fields.items():

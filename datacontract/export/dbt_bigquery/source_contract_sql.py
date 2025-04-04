@@ -11,19 +11,23 @@ def source_contract_sql(data_contract_model: Model) -> str:
     config_tags = f",tags={data_contract_model.tags}"
     config_labels = ""
     if data_contract_model.config:
-        config_labels = f",labels={data_contract_model.config}"
+        config_labels = f",labels={data_contract_model.config['labels']}"
 
     fields = ""
     for field_key, field in data_contract_model.fields.items():
         if fields:
             fields += '\n\t\t,'
-        fields += f"{field.config['secured_value']} as {field.title}"
+
+        if field.config['secured_value'] and field.config['secured_value'] != field.title:
+            fields += f"{field.config['secured_value']} as {field.title}"
+        else:
+            fields += field.title        
 
     config_block = f"""
     {{{{
         config(
             materialized = 'view'
-            ,alias = f"{data_contract_model.config['entity_label']}"
+            ,alias = '{data_contract_model.config['entity_label']}'
             {config_meta}
             {config_tags}
             {config_labels}

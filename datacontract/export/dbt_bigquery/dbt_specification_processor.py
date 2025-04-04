@@ -1,7 +1,5 @@
 from typing import Dict, List
 
-from datacontract.imports.importer import Importer
-from datacontract.lint.resolve import resolve_data_contract_from_location
 from datacontract.model.exceptions import DataContractException
 from datacontract.export.bigquery_converter import map_type_to_bigquery
 
@@ -49,17 +47,6 @@ column_security:
       then {} else '*@*.*' end
 '''
 
-class DbtSpecificationImporter(Importer):
-    
-    def import_source(
-        self, data_contract_specification: DataContractSpecification, source: str = None, import_args: dict = {}
-    ) -> DataContractSpecification:
-        
-        if source:
-            return _to_dbt_specification_bigquery_from_source(source, model=import_args.get('model', None))
-
-        return _to_dbt_specification_bigquery(data_contract_specification, model=import_args.get('model', None))
-        
 
 def quote_name(_field_name):
     pattern = '^[a-zA-Z0-9_.]+$'
@@ -80,24 +67,7 @@ def clean_name(_field_name):
     return re.sub(pattern, '_', _field_name.strip().replace('`','').lower())  
 
 
-def _to_dbt_specification_bigquery_from_source(source, model=None) -> DataContractSpecification:
-
-    try:
-        source_data_contract_spec = DataContractSpecification().from_file(source)
-
-    except Exception as e:
-        raise DataContractException(
-            type="schema",
-            name="Parse data contract",
-            reason=f"Failed to parse data contract from {source}",
-            engine="datacontract",
-            original_exception=e,
-        )
-    
-    return _to_dbt_specification_bigquery(source_data_contract_spec, model=model)
-
-
-def _to_dbt_specification_bigquery(source_data_contract_spec: DataContractSpecification, model=None) -> DataContractSpecification:
+def get_dbt_data_contract_specification(source_data_contract_spec: DataContractSpecification, model=None) -> DataContractSpecification:
 
     if source_data_contract_spec.servers is None:
         source_data_contract_spec.servers = {}
@@ -108,22 +78,15 @@ def _to_dbt_specification_bigquery(source_data_contract_spec: DataContractSpecif
 
     dbt_specification = DataContractSpecification()
 
-    dbt_specification.id = f"dbt_specification__source_data_contract_spec.id"
+    dbt_specification.id = f"dbt_specification__{source_data_contract_spec.id}"
     dbt_specification.dataContractSpecification = '1.1.0'
     dbt_specification.info = source_data_contract_spec.info
     dbt_specification.info.title = source_data_contract_spec.info.title
     dbt_specification.servers = source_data_contract_spec.servers
 
-    if not model or model == 'all':
-        if len(source_data_contract_spec.models) > 1:
-            raise DataContractException(
-                type="schema",
-                name="Import data contract",
-                reason="Multiple models found in data contract. Please specify a model to import.",
-                engine="datacontract",
-            )
-
     for source_model_name, source_model in source_data_contract_spec.models.items():
+
+        #print(source_model)
 
         if model and model != 'all' and source_model_name != model:
             continue
@@ -134,7 +97,8 @@ def _to_dbt_specification_bigquery(source_data_contract_spec: DataContractSpecif
         if not source_model.dbt:
             source_model.dbt = ModelConfigDBT()
 
-        dbt_model_name = source_model.config.get("bigqueryTable", source_model_name)
+        dbt_model_name = source_model.title if source_model.title else source_model_name
+        dbt_model_identifier = source_model.config.get("bigqueryTable", source_model_name)
 
         dbt_model = Model()
         dbt_model.description = source_model.description
@@ -147,19 +111,22 @@ def _to_dbt_specification_bigquery(source_data_contract_spec: DataContractSpecif
             if not dbt_model.dbt.orderBy:
                 dbt_model.dbt.orderBy = '_loaded_at'
         
-        dbt_model.config['source_table'] = source_model_name
+        dbt_model.config['source_table'] = dbt_model_identifier
         dbt_model.config['source_dataset'] = landing_server.dataset if landing_server.dataset else 'unknown'
         dbt_model.config['source_project'] = landing_server.format if landing_server.format else landing_server.project if landing_server.project  else 'unknown'
         dbt_model.config['loader'] = landing_server.driver if landing_server.driver else 'unknown'
 
         dbt_model.config['product'] = source_data_contract_spec.info.title
-        dbt_model.config['entity'] = source_model.title
-        dbt_model.config['entity_label'] = f"{source_data_contract_spec.info.title}__{source_model.title}"
+        dbt_model.config['entity'] = dbt_model_name
+        dbt_model.config['entity_label'] = f"{source_data_contract_spec.info.title}__{dbt_model_name}"
 
         dbt_model.config['sql_joins'] = []
         dbt_model.config['sql_where'] = ''
         dbt_model.config['security_masks'] = {}
         
+        if not source_model.dbt.security:
+            dbt_model.dbt.security = 'table_access_all'
+
         # set security settings
         if SECURITY_YAML:
             _set_security(dbt_model, SECURITY_YAML)
@@ -180,9 +147,9 @@ def _to_dbt_specification_bigquery(source_data_contract_spec: DataContractSpecif
         dbt_model.config['labels'] = {}
         dbt_model.tags = []
 
-        dbt_model.config['labels']['source_table'] = source_model_name.lower().replace('*', '-tableset')
-        if (len(source_model_name) > 63):
-            dbt_model.config['labels']['source_table'] = f"{source_model_name.lower()[:53]}-truncated"
+        dbt_model.config['labels']['source_table'] = dbt_model_identifier.lower().replace('*', '-tableset')
+        if (len(dbt_model_identifier) > 63):
+            dbt_model.config['labels']['source_table'] = f"{dbt_model_identifier.lower()[:53]}-truncated"
         
         dbt_model.config['labels']['source_dataset'] = landing_server.dataset.lower() if landing_server.dataset else 'unknown'
         dbt_model.config['labels']['snapshot_enabled'] = 'yes' if dbt_model.dbt.snapshot else 'no'
@@ -217,6 +184,7 @@ def _to_dbt_specification_bigquery(source_data_contract_spec: DataContractSpecif
                         engine="datacontract",
                     )
 
+        print(source_model.fields.keys())
         dbt_model.fields = {}
 
         # Common metadata from server ephemerals
@@ -251,13 +219,6 @@ def _to_dbt_specification_bigquery(source_data_contract_spec: DataContractSpecif
             , truncate_timestamp=truncate_timestamp
             , field_category = 'data'
             )
-
-        #Primary key field
-        # dbt_model.primaryKey = []
-        # for field_key, field in dbt_model.fields.items():
-        #     if field.primaryKey:
-        #         dbt_model.primaryKey.append(field.title) 
-        #         continue        
 
         primary_field = Field()
         primary_field.dbt = FieldConfigDBT()
@@ -448,7 +409,7 @@ def _get_dbt_fields_bigquery(
                 #print(f"field: {field_name}, is_json: {is_json}, field_source: {field_source}")
                 cast_field_source = _json_to_scalar_bigquery(field_source, field_type, truncate_timestamp=truncate_timestamp)
             elif not is_json and (is_calculated or data_type_overwrite) and field.dbt.pivotKeyFilter is None and field.title != '_primary_key':
-                cast_field_source = f"cast( {field_source:<28}{' as ' + field_type + ' )':<20}"
+                cast_field_source = f"cast( {field_source:<28}{' as ' + field_type.lower() + ' )':<20}"
             elif pivot_source_field is not None and field.dbt.pivotKeyFilter is not None:
                 field_source_prefix = '__unnested.'
                 if is_calculated:

@@ -1,5 +1,5 @@
 from datacontract.export.exporter import Exporter
-from datacontract.imports.dbt_specification_importer import DbtSpecificationImporter
+from datacontract.export.dbt_bigquery.dbt_specification_processor import get_dbt_data_contract_specification
 from datacontract.model.exceptions import DataContractException
 
 from datacontract.model.dbt_data_contract_specification import DataContractSpecification
@@ -46,14 +46,14 @@ class DbtSpecificationExporter(Exporter):
                 engine="datacontract",
             )
 
-        if not self.dbt_specification and data_contract.id.startswith('data_specification__'):
+        if not self.dbt_specification and data_contract.id.startswith('dbt_specification__'):
             self.dbt_specification = data_contract
         elif self.dbt_specification and model_name in self.dbt_specification.models:
             pass
         else:
-            self.dbt_specification = DbtSpecificationExporter.get_dbt_specification(data_contract, model_name)
+            self.dbt_specification = get_dbt_data_contract_specification(data_contract, model_name)
 
-        print(self.dbt_specification.model_dump_json(indent=2))
+        #print(self.dbt_specification.model_dump_json(indent=2))
 
         template = str(export_args.get("template"))
         if template is None:
@@ -71,13 +71,3 @@ class DbtSpecificationExporter(Exporter):
         
         result = func(self.dbt_specification.models[model_name])
         return result
-    
-
-    @classmethod
-    def get_dbt_specification(self, data_contract: DataContractSpecification, model) -> DataContractSpecification:
-        
-        import_args = {"model":model}
-        dbt_specification_importer = DbtSpecificationImporter("dbt_specification")
-        dbt_specification = dbt_specification_importer.import_source(data_contract_specification=data_contract, import_args=import_args)
-                
-        return dbt_specification

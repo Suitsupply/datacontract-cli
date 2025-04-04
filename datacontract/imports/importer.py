@@ -22,7 +22,7 @@ class ImportFormat(str, Enum):
     sql = "sql"
     avro = "avro"
     dbt = "dbt"
-    dbt_specification = "dbt_specification"
+    dbt_specification = "dbt-specification"
     dbml = "dbml"
     glue = "glue"
     jsonschema = "jsonschema"

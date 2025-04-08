@@ -26,6 +26,20 @@ from my_table
     assert actual.strip() == expected.strip()
 
 
+def test_to_sql_query_mysql():
+    actual = DataContract(data_contract_file="fixtures/mysql-export/datacontract.yaml").export("sql-query")
+    expected = """
+-- Data Contract: mysql
+-- SQL Dialect: mysql
+select
+    field_one,
+    field_two,
+    field_three
+from my_table
+"""
+    assert actual.strip() == expected.strip()
+
+
 def test_to_sql_query_snowflake():
     actual = DataContract(data_contract_file="fixtures/snowflake/datacontract.yaml").export("sql-query", model="orders")
     expected = """

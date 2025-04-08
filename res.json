@@ -1,0 +1,149 @@
+dataContractSpecification: 1.1.0
+id: my-data-contract-id
+info:
+  title: My Data Contract
+  version: 0.0.1
+models:
+  my_table:
+    fields:
+      field_bigint:
+        config:
+          mysqlType: BIGINT
+        description: Large integer (-9 quintillion to 9 quintillion)
+        type: long
+      field_binary:
+        config:
+          mysqlType: BINARY(16)
+        description: Fixed-length binary
+        type: bytes
+      field_blob:
+        config:
+          mysqlType: BLOB
+        description: Binary large object
+        type: variant
+      field_boolean:
+        config:
+          mysqlType: BOOLEAN
+        description: Boolean-like (0 or 1)
+        type: boolean
+      field_char:
+        config:
+          mysqlType: CHAR(10)
+        description: Fixed-length string
+        maxLength: 10
+        type: string
+      field_date:
+        config:
+          mysqlType: DATE
+        description: Date only (YYYY-MM-DD)
+        type: date
+      field_datetime:
+        config:
+          mysqlType: DATETIME
+        description: Standard datetime
+        type: timestamp_ntz
+      field_decimal:
+        config:
+          mysqlType: DECIMAL(10, 2)
+        description: Fixed precision decimal
+        precision: 10
+        scale: 2
+        type: decimal
+      field_double:
+        config:
+          mysqlType: DOUBLE
+        description: Larger floating-point
+        type: variant
+      field_enum:
+        config:
+          mysqlType: ENUM('A', 'B', 'C')
+        description: Enum type (specific set of values)
+        type: variant
+      field_float:
+        config:
+          mysqlType: FLOAT
+        description: Approximate floating-point
+        type: float
+      field_guid:
+        config:
+          mysqlType: CHAR(36)
+        description: GUID (stored as CHAR(36))
+        maxLength: 36
+        type: string
+      field_int:
+        config:
+          mysqlType: INT
+        description: Integer (-2.1B to 2.1B)
+        type: int
+      field_json:
+        config:
+          mysqlType: JSON
+        description: JSON (native MySQL support)
+        type: string
+      field_longtext:
+        config:
+          mysqlType: LONGTEXT
+        description: Very large text
+        type: variant
+      field_not_null:
+        config:
+          mysqlType: INT
+        description: Not null
+        required: true
+        type: int
+      field_primary_key:
+        config:
+          mysqlType: INT
+        description: Primary key
+        primaryKey: true
+        type: int
+      field_set:
+        config:
+          mysqlType: SET('X', 'Y', 'Z')
+        description: Set type (multiple values from a set)
+        type: variant
+      field_smallint:
+        config:
+          mysqlType: SMALLINT
+        description: Integer (-32,768 to 32,767)
+        type: int
+      field_text:
+        config:
+          mysqlType: TEXT
+        description: Large variable-length string
+        type: string
+      field_time:
+        config:
+          mysqlType: TIME
+        description: Time only (HH:MM:SS)
+        type: string
+      field_timestamp:
+        config:
+          mysqlType: DATETIME
+        description: Datetime with automatic updates
+        type: timestamp_ntz
+      field_tinyint:
+        config:
+          mysqlType: TINYINT
+        description: Integer (0-255)
+        type: int
+      field_varbinary:
+        config:
+          mysqlType: VARBINARY(100)
+        description: Variable-length binary
+        type: bytes
+      field_varchar:
+        config:
+          mysqlType: VARCHAR(100)
+        description: Variable-length string
+        maxLength: 100
+        type: string
+      field_year:
+        config:
+          mysqlType: YEAR(4)
+        description: Year (YYYY)
+        type: variant
+    type: table
+servers:
+  mysql:
+    type: mysql

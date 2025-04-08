@@ -225,6 +225,8 @@ def import_field_config(odcs_property: Dict[str, Any], server_type=None) -> Dict
     if physical_type is not None:
         if server_type == "postgres" or server_type == "postgresql":
             config["postgresType"] = physical_type
+        if server_type == "mysql":
+            config["mysqlType"] = physical_type
         elif server_type == "bigquery":
             config["bigqueryType"] = physical_type
         elif server_type == "snowflake":

@@ -26,6 +26,20 @@ CREATE TABLE my_table (
     assert actual == expected
 
 
+def test_to_sql_ddl_mysql():
+    actual = DataContract(data_contract_file="fixtures/mysql-export/datacontract.yaml").export("sql")
+    expected = """
+-- Data Contract: mysql
+-- SQL Dialect: mysql
+CREATE TABLE my_table (
+  field_one VARCHAR not null,
+  field_two INT,
+  field_three DATETIME
+);
+  """.strip()
+    assert actual == expected
+
+
 def test_to_sql_ddl_snowflake():
     actual = DataContract(data_contract_file="fixtures/snowflake/datacontract.yaml").export("sql")
     expected = """

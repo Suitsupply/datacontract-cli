@@ -1,0 +1,35 @@
+dataContractSpecification: 1.1.0
+id: mysql
+info:
+  title: mysql
+  version: 0.0.1
+  owner: my-domain-team
+servers:
+  production:
+    type: mysql
+    host: localhost
+    port: 3306
+    database: test
+  staging:
+    type: mysql
+    host: localhost
+    port: 3306
+    database: test
+models:
+  my_table:
+    type: table
+    fields:
+      field_one:
+        type: varchar
+        required: true
+        unique: true
+        pattern: "[A-Za-z]{2}-\\d{3}-[A-Za-z]{2}$"
+      field_two:
+        type: int
+        minimum: 10
+      field_three:
+        type: timestamp
+        config:
+          mysqlType: DATETIME
+    config:
+      postgresTable: my_table

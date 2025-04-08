@@ -222,6 +222,7 @@ A list of available extras:
 | Iceberg                 | `pip install datacontract-cli[iceberg]`    |
 | Kafka Integration       | `pip install datacontract-cli[kafka]`      |
 | PostgreSQL Integration  | `pip install datacontract-cli[postgres]`   |
+| MySQL Integration       | `pip install datacontract-cli[mysql]`   |
 | S3 Integration          | `pip install datacontract-cli[s3]`         |
 | Snowflake Integration   | `pip install datacontract-cli[snowflake]`  |
 | Microsoft SQL Server    | `pip install datacontract-cli[sqlserver]`  |
@@ -385,6 +386,7 @@ Supported server types:
 - [snowflake](#snowflake)
 - [kafka](#kafka)
 - [postgres](#postgres)
+- [mysql](#mysql)
 - [trino](#trino)
 - [local](#local)
 
@@ -775,6 +777,36 @@ models:
 |----------------------------------|--------------------|-------------|
 | `DATACONTRACT_POSTGRES_USERNAME` | `postgres`         | Username    |
 | `DATACONTRACT_POSTGRES_PASSWORD` | `mysecretpassword` | Password    |
+
+
+#### MySQL
+
+Data Contract CLI can test data in MySQL database.
+
+##### Example
+
+datacontract.yaml
+```yaml
+servers:
+  mysql:
+    type: mysql
+    host: localhost
+    port: 3306
+    database: my_database
+    schema: public
+models:
+  my_table_1: # corresponds to a table
+    type: table
+    fields:
+      my_column_1: # corresponds to a column
+        type: varchar
+```
+
+##### Environment Variables
+| Environment Variable             | Example            | Description |
+|----------------------------------|--------------------|-------------|
+| `DATACONTRACT_MYSQL_USERNAME`    | `mysqluser`        | Username    |
+| `DATACONTRACT_MYSQL_PASSWORD`    | `mysqlpassword`    | Password    |
 
 
 #### Trino

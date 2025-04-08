@@ -7,6 +7,8 @@ def convert_to_sql_type(field: Field, server_type: str) -> str:
         return convert_to_snowflake(field)
     elif server_type == "postgres":
         return convert_type_to_postgres(field)
+    elif server_type == "mysql":
+        return convert_type_to_mysql(field)    
     elif server_type == "dataframe":
         return convert_to_dataframe(field)
     elif server_type == "databricks":
@@ -109,6 +111,44 @@ def convert_type_to_postgres(field: Field) -> None | str:
         return convert_to_sql_type(field.items, "postgres") + "[]"
     return None
 
+
+# https://dev.mysql.com/doc/refman/8.0/en/data-types.html
+# Using the name whenever possible
+def convert_type_to_mysql(field: Field) -> None | str:
+    if field.config and "mysqlType" in field.config:
+        return field.config["mysqlType"]
+
+    type = field.type
+    if type is None:
+        return None
+    if type.lower() in ["string", "varchar", "text"]:
+        return "VARCHAR"
+    if type.lower() in ["timestamp", "timestamp_tz", "timestamp_ntz"]:
+        return "TIMESTAMP"
+    if type.lower() in ["date"]:
+        return "DATE"
+    if type.lower() in ["time"]:
+        return "TIME"
+    if type.lower() in ["number", "decimal", "numeric"]:
+        # precision and scale not supported by data contract
+        return "DECIMAL"
+    if type.lower() in ["float", "double"]:
+        return "DOUBLE"
+    if type.lower() in ["integer", "int"]:
+        return "INT"
+    if type.lower() in ["long", "bigint"]:
+        return "BIGINT"
+    if type.lower() in ["boolean"]:
+        return "TINYINT(1)"
+    if type.lower() in ["object", "record", "struct"]:
+        return "JSON"
+    if type.lower() in ["bytes", "binary"]:
+        return "BLOB"
+    if type.lower() in ["array"]:
+        raise NotImplementedError("MySQL does not natively support array types.")
+    if type.lower() in ["null"]:
+        return "NULL"
+    return None
 
 # dataframe data types:
 # https://spark.apache.org/docs/latest/sql-ref-datatypes.html

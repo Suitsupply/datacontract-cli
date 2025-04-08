@@ -115,6 +115,21 @@
             "if": {
               "properties": {
                 "type": {
+                  "const": "mysql"
+                }
+              },
+              "required": [
+                "type"
+              ]
+            },
+            "then": {
+              "$ref": "#/$defs/MySqlServer"
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
                   "const": "s3"
                 }
               },
@@ -259,6 +274,21 @@
             },
             "then": {
               "$ref": "#/$defs/PostgresServer"
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "mysql"
+                }
+              },
+              "required": [
+                "type"
+              ]
+            },
+            "then": {
+              "$ref": "#/$defs/MySqlServer"
             }
           },
           {
@@ -1128,6 +1158,7 @@
             "dataframe",
             "glue",
             "postgres",
+            "mysql",
             "oracle",
             "kafka",
             "pubsub",
@@ -1521,6 +1552,39 @@
         "database",
         "schema"
       ]
+    },
+    "MySqlServer": {
+      "type": "object",
+      "title": "MySqlServer",
+      "properties": {
+        "host": {
+          "type": "string",
+          "description": "The host to the MySql database server",
+          "examples": [
+          "localhost"
+          ]
+        },
+        "port": {
+          "type": "integer",
+          "description": "The port to the MySql database server.",
+          "default": 3306,
+          "examples": [
+          3306
+          ]
+        },
+        "database": {
+          "type": "string",
+          "description": "The name of the database.",
+          "examples": [
+          "mysql"
+          ]
+        },
+        "required": [
+        "host",
+        "port",
+        "database"
+        ]
+      }
     },
     "OracleServer": {
       "type": "object",

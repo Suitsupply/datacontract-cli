@@ -81,6 +81,9 @@ def to_sql_ddl(
         if server.type == "postgres":
             server_type = "postgres"
             break
+        if server.type == "mysql":
+            server_type = "mysql"
+            break
         if server.type == "databricks":
             server_type = "databricks"
             if server.catalog is not None and server.schema_ is not None:

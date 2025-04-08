@@ -140,6 +140,9 @@ def to_col_type(column, dialect):
     if col_type_kind is None:
         return None
 
+    if dialect == 'mysql':
+        return col_type_kind.sql().split('(')[0].strip()
+    
     return col_type_kind.sql(dialect)
 
 
@@ -260,8 +263,12 @@ def map_type_from_sql(sql_type: str):
         return "timestamp_ntz"
     elif sql_type_normed == "datetime2":
         return "timestamp_ntz"
+    elif sql_type_normed.startswith("datetime"):
+        return "timestamp_ntz"
     elif sql_type_normed == "datetimeoffset":
         return "timestamp_tz"
+    elif sql_type_normed.startswith("timestamp"):
+        return "timestamp_ntz"
     elif sql_type_normed == "uniqueidentifier":  # tsql
         return "string"
     elif sql_type_normed == "json":

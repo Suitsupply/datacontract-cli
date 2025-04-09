@@ -20,7 +20,20 @@ class SqlImporter(Importer):
 def import_sql(
     data_contract_specification: DataContractSpecification, format: str, source: str, import_args: dict = None
 ) -> DataContractSpecification:
-    sql = read_file(source)
+
+    # Check if the source is a string or a file path
+    is_string = False
+    if import_args and 'is_string' in import_args:
+        is_string = import_args.get('is_string', False)
+
+    if is_string:
+        # Use the source directly as SQL content
+        sql = source
+        source_name = "string input"
+    else:
+        # Read SQL from file
+        sql = read_file(source)
+        source_name = source
 
     dialect = to_dialect(import_args)
 
@@ -30,15 +43,18 @@ def import_sql(
         logging.error(f"Error parsing SQL: {str(e)}")
         raise DataContractException(
             type="import",
-            name=f"Reading source from {source}",
+            name=f"Reading source from {source_name}",
             reason=f"Error parsing SQL: {str(e)}",
             engine="datacontract",
             result=ResultEnum.error,
         )
 
-    server_type: str | None = to_server_type(source, dialect)
+    server_type: str | None = to_server_type(source_name, dialect)
     if server_type is not None:
-        data_contract_specification.servers[server_type] = Server(type=server_type)
+        if data_contract_specification.servers is None:
+            data_contract_specification.servers = {}
+        if server_type not in data_contract_specification.servers:
+            data_contract_specification.servers[server_type] = Server(type=server_type)
 
     tables = parsed.find_all(sqlglot.expressions.Table)
 
@@ -78,6 +94,20 @@ def import_sql(
         )
 
     return data_contract_specification
+
+
+# Add a convenience function for string imports
+def import_sql_from_string(
+    data_contract_specification: DataContractSpecification, format: str, sql_string: str, import_args: dict = None
+) -> DataContractSpecification:
+
+    if import_args is None:
+        import_args = {}
+    
+    # Set the flag that indicates source is a string
+    import_args['is_string'] = True
+    
+    return import_sql(data_contract_specification, format, sql_string, import_args)
 
 
 def get_primary_key(column) -> bool | None:

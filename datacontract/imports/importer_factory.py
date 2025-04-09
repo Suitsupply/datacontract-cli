@@ -110,6 +110,21 @@ importer_factory.register_lazy_importer(
     class_name="CsvImporter",
 )
 importer_factory.register_lazy_importer(
+    name=ImportFormat.contract_alpha,
+    module_path="datacontract.imports.contract_alpha_importer",
+    class_name="ContractAlphaImporter",
+)
+importer_factory.register_lazy_importer(
+    name=ImportFormat.server_direct,
+    module_path="datacontract.imports.server_direct_importer",
+    class_name="ServerDirectImporter",
+)
+importer_factory.register_lazy_importer(
+    name=ImportFormat.dbt_specification,
+    module_path="datacontract.imports.dbt_specification_importer",
+    class_name="DbtSpecificationImporter",
+)
+importer_factory.register_lazy_importer(
     name=ImportFormat.protobuf,
     module_path="datacontract.imports.protobuf_importer",
     class_name="ProtoBufImporter",

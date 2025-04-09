@@ -19,6 +19,10 @@ from datacontract.integration.datamesh_manager import (
 from datacontract.lint.resolve import resolve_data_contract_dict
 from datacontract.output.output_format import OutputFormat
 from datacontract.output.test_results_writer import write_test_result
+from rich.traceback import install
+
+# Disable showing locals in tracebacks
+install(show_locals=False)
 
 console = Console()
 
@@ -32,6 +36,7 @@ app = typer.Typer(
     cls=OrderedCommands,
     no_args_is_help=True,
     add_completion=False,
+    pretty_exceptions_show_locals=False
 )
 
 
@@ -60,6 +65,12 @@ def common(
     detect breaking changes, and export to different formats.
     """
     pass
+
+
+@app.command()
+def hola(
+):
+    console.print(f"Hola!")
 
 
 @app.command()
@@ -297,6 +308,14 @@ def import_(
         str,
         typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
     ] = None,
+    server: Annotated[
+        Optional[str],
+        typer.Option(help="The server name to import from Source data contract."),
+    ] = None,
+    model: Annotated[
+        Optional[str],
+        typer.Option(help="The model name to import from Source data contract and provided Server."),
+    ] = None,
 ):
     """
     Create a data contract from the given source location. Saves to file specified by `output` option if present, otherwise prints to stdout.
@@ -316,13 +335,34 @@ def import_(
         dbml_schema=dbml_schema,
         dbml_table=dbml_table,
         iceberg_table=iceberg_table,
+        server=server,
+        model=model,
     )
     if output is None:
         console.print(result.to_yaml(), markup=False, soft_wrap=True)
     else:
-        with output.open(mode="w", encoding="utf-8") as f:
+        # Ensure the output path is valid
+        output_path = Path(output)
+        if not output_path.is_absolute():
+            
+            if source:
+                source_path = Path(source)
+                if source_path.is_file():
+                    output_path = Path(source_path.parent) / output_path
+                else:
+                    output_path = Path(source) / output_path
+            else:
+                console.print("Error: --source value is required for relative output paths.")
+                raise typer.Exit(code=1)
+
+        if output_path.is_dir():
+            output_path = output_path / "datacontract.yml"
+        else:
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        with output_path.open(mode="w", encoding="utf-8") as f:
             f.write(result.to_yaml())
-        console.print(f"Written result to {output}")
+        console.print(f"Written result to {output_path}")
 
 
 @app.command(name="publish")

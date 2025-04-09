@@ -91,7 +91,7 @@ def map_type_to_bigquery(field: Field) -> str:
     elif field_type.lower() == "bytes":
         return "BYTES"
     elif field_type.lower() in ["int", "integer"]:
-        return "INTEGER"
+        return "INT64"
     elif field_type.lower() in ["long", "bigint"]:
         return "INT64"
     elif field_type.lower() == "float":

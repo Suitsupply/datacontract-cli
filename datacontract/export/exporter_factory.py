@@ -20,7 +20,9 @@ class ExporterFactory:
         exporters.update(self.dict_lazy_exporter.copy())
         if name not in exporters.keys():
             raise ValueError(f"The '{name}' format is not supported.")
+        
         exporter_class = exporters[name]
+
         if type(exporters[name]) is tuple:
             exporter_class = load_module_class(module_path=exporters[name][0], class_name=exporters[name][1])
         if not exporter_class:
@@ -197,4 +199,10 @@ exporter_factory.register_lazy_exporter(
 
 exporter_factory.register_lazy_exporter(
     name=ExportFormat.custom, module_path="datacontract.export.custom_converter", class_name="CustomExporter"
+)
+
+
+# Register DBT Specification Exporters for different formats
+exporter_factory.register_lazy_exporter(
+    name=ExportFormat.dbt_specification, module_path="datacontract.export.dbt_specification_converter", class_name="DbtSpecificationExporter"
 )

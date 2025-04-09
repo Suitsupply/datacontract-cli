@@ -22,6 +22,7 @@ class ImportFormat(str, Enum):
     sql = "sql"
     avro = "avro"
     dbt = "dbt"
+    dbt_specification = "dbt-specification"
     dbml = "dbml"
     glue = "glue"
     jsonschema = "jsonschema"
@@ -32,6 +33,8 @@ class ImportFormat(str, Enum):
     iceberg = "iceberg"
     parquet = "parquet"
     csv = "csv"
+    contract_alpha = "contract_alpha"
+    server_direct = "server_direct"
     protobuf = "protobuf"
 
     @classmethod

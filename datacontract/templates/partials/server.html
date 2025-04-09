@@ -207,3 +207,20 @@
   {% endfor %}
 
 </li>
+
+
+{% if server.ephemerals %}
+<table class="min-w-full divide-y divide-gray-300">
+  <tbody class="divide-y divide-gray-200 bg-white">
+  <tr class="bg-gray-50">
+    <th scope="colgroup" colspan="4"
+        class="py-2 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">
+      <span>Ephemerals</span>
+    </th>
+  </tr>
+  {% for field_name, field in server.ephemerals.items() %}
+    {{ render_partial('partials/model_field.html', nested = False, field_name=field_name, field = field, level = 0) }}
+  {% endfor %}                 
+  </tbody>
+</table>  
+{% endif %}

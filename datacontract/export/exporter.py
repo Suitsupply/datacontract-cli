@@ -90,6 +90,8 @@ def _determine_sql_server_type(data_contract: DataContractSpecification, sql_ser
             return "snowflake"
         elif "postgres" in server_types:
             return "postgres"
+        elif "mysql" in server_types:
+            return "mysql"
         elif "databricks" in server_types:
             return "databricks"
         else:

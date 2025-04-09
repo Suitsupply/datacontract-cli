@@ -73,6 +73,9 @@ def _to_data_source_options(model_key, server: Server):
         elif server.type == "postgres":
             options["schema"] = server.schema_
             options["table"] = model_key
+        elif server.type == "mysql":
+            options["schema"] = server.schema_
+            options["table"] = model_key
         elif server.type == "kafka":
             options["topic"] = server.topic
 

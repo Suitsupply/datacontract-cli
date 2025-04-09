@@ -17,6 +17,7 @@ from datacontract.model.data_contract_specification import (
     Quality,
     Retention,
     Server,
+    ServerRole,
     ServiceLevel,
     Terms,
 )
@@ -73,8 +74,9 @@ def import_info(odcs_contract: Dict[str, Any]) -> Info:
         info.description = odcs_contract.get("description").get("purpose")
 
     # odcs.domain => datacontract.owner
-    if odcs_contract.get("domain") is not None:
-        info.owner = odcs_contract.get("domain")
+    owner = get_owner(odcs_contract.get("customProperties"))
+    if owner is not None:
+        info.owner = owner
 
     # add dataProduct as custom property
     if odcs_contract.get("dataProduct") is not None:
@@ -85,6 +87,17 @@ def import_info(odcs_contract: Dict[str, Any]) -> Info:
         info.tenant = odcs_contract.get("tenant")
 
     return info
+
+
+def import_server_roles(roles: List[Dict]) -> List[ServerRole] | None:
+    if roles is None:
+        return None
+    result = []
+    for role in roles:
+        server_role = ServerRole()
+        server_role.name = role.get("role")
+        server_role.description = role.get("description")
+        result.append(server_role)
 
 
 def import_servers(odcs_contract: Dict[str, Any]) -> Dict[str, Server] | None:
@@ -120,7 +133,7 @@ def import_servers(odcs_contract: Dict[str, Any]) -> Dict[str, Server] | None:
         server.dataProductId = odcs_server.get("dataProductId")
         server.outputPortId = odcs_server.get("outputPortId")
         server.driver = odcs_server.get("driver")
-        server.roles = odcs_server.get("roles")
+        server.roles = import_server_roles(odcs_server.get("roles"))
 
         servers[server_name] = server
     return servers
@@ -225,6 +238,8 @@ def import_field_config(odcs_property: Dict[str, Any], server_type=None) -> Dict
     if physical_type is not None:
         if server_type == "postgres" or server_type == "postgresql":
             config["postgresType"] = physical_type
+        if server_type == "mysql":
+            config["mysqlType"] = physical_type
         elif server_type == "bigquery":
             config["bigqueryType"] = physical_type
         elif server_type == "snowflake":
@@ -264,7 +279,7 @@ def import_fields(
                 description=" ".join(description.splitlines()) if description is not None else None,
                 type=mapped_type,
                 title=odcs_property.get("businessName"),
-                required=not odcs_property.get("nullable") if odcs_property.get("nullable") is not None else False,
+                required=odcs_property.get("required") if odcs_property.get("required") is not None else None,
                 primaryKey=odcs_property.get("primaryKey")
                 if not has_composite_primary_key(odcs_properties) and odcs_property.get("primaryKey") is not None
                 else False,
@@ -272,7 +287,7 @@ def import_fields(
                 examples=odcs_property.get("examples") if odcs_property.get("examples") is not None else None,
                 classification=odcs_property.get("classification")
                 if odcs_property.get("classification") is not None
-                else "",
+                else None,
                 tags=odcs_property.get("tags") if odcs_property.get("tags") is not None else None,
                 quality=odcs_property.get("quality") if odcs_property.get("quality") is not None else [],
                 config=import_field_config(odcs_property, server_type),
@@ -308,6 +323,15 @@ def get_custom_type_mappings(odcs_custom_properties: List[Any]) -> Dict[str, str
                 result[odcs_type_name] = datacontract_type
 
     return result
+
+
+def get_owner(odcs_custom_properties: List[Any]) -> str | None:
+    if odcs_custom_properties is not None:
+        for prop in odcs_custom_properties:
+            if prop["property"] == "owner":
+                return prop["value"]
+
+    return None
 
 
 def import_tags(odcs_contract) -> List[str] | None:

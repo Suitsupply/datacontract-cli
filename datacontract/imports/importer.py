@@ -35,6 +35,7 @@ class ImportFormat(str, Enum):
     csv = "csv"
     contract_alpha = "contract_alpha"
     server_direct = "server_direct"
+    protobuf = "protobuf"
 
     @classmethod
     def get_supported_formats(cls):

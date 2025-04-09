@@ -1,0 +1,37 @@
+<div class="text-gray-400">DBT Configuration:</div>
+
+{% if dbt.enabled %}
+<div class="text-gray-400" style="padding-left: 10px;">Enabled: {{ dbt.enabled }}</div>
+{% endif %}
+  
+{% if dbt.index >= 0 %}
+<div class="text-gray-400" style="padding-left: 10px;">Index: {{ dbt.index }}</div>
+{% endif %}
+
+{% if dbt.calculation %}
+<div class="text-gray-400" style="padding-left: 10px;">Calculation: {{ dbt.calculation }}</div>
+{% endif %}
+
+{% if dbt.pivot %}
+<div class="text-gray-400" style="padding-left: 10px;">Pivot: {{ dbt.pivot }}</div>
+{% endif %}
+
+{% if dbt.pivotKeyField %}
+<div class="text-gray-400" style="padding-left: 10px;">Pivot Key Field: {{ dbt.pivotKeyField }}</div>
+{% endif %}
+
+{% if dbt.pivotKeyFilter %}
+<div class="text-gray-400" style="padding-left: 10px;">Pivot Key Filter: {{ dbt.pivotKeyFilter }}</div>
+{% endif %}
+
+{% if dbt.pivotValueField %}
+<div class="text-gray-400" style="padding-left: 10px;">Pivot Value Field: {{ dbt.pivotValueField }}</div>
+{% endif %}
+
+{% if dbt.security %}
+<div class="text-gray-400" style="padding-left: 10px;">Security: {{ dbt.security }}</div>
+{% endif %}
+
+{% if dbt.bigqueryType %}
+<div class="text-gray-400" style="padding-left: 10px;">BigQuery Type: {{ dbt.bigqueryType }}</div>
+{% endif %}

@@ -116,8 +116,13 @@
     {{ render_partial('partials/quality.html', quality = quality) }}
     {% endfor %}
     {% endif %}
+        
+    {% if field.dbt %}
+    {{ render_partial('partials/field_dbt.html', dbt=field.dbt) }}
+    {% endif %}
   </td>
 </tr>
+
 
 {% macro render_nested_partial(field_name, field, level) %}
 {{ render_partial('partials/model_field.html', nested=True, field_name=field_name, field=field, level=level + 1) }}

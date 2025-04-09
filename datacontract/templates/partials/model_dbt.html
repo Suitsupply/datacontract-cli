@@ -1,0 +1,61 @@
+<div class=" px-4 sm:px-0">
+  <p class="text-sm text-gray-500">DBT Configuration:</p>
+</div>
+
+  <div class="px-4 py-2 sm:px-6">
+
+      {% if dbt.enabled %}
+      <div class="text-gray-400" style="padding-left: 10px;">Enabled: {{ dbt.enabled }}</div>
+      {% endif %}
+
+      {% if dbt.typeOverwrite %}
+      <div class="text-gray-400" style="padding-left: 10px;">Type Overwrite: {{ dbt.typeOverwrite }}</div>
+      {% endif %}
+
+      {% if dbt.snapshot %}
+      <div class="text-gray-400" style="padding-left: 10px;">Snapshot: {{ dbt.snapshot }}</div>
+      {% endif %}
+
+      {% if dbt.deduplicate %}
+      <div class="text-gray-400" style="padding-left: 10px;">Deduplicate: {{ dbt.deduplicate }}</div>
+      {% endif %}
+
+      {% if dbt.orderBy %}
+      <div class="text-gray-400" style="padding-left: 10px;">Order By: {{ dbt.orderBy }}</div>
+      {% endif %}
+
+      {% if dbt.clusterBy %}
+      <div class="text-gray-400" style="padding-left: 10px;">Cluster By: {{ dbt.clusterBy }}</div>
+      {% endif %}
+
+      {% if dbt.incremental %}
+      <div class="text-gray-400" style="padding-left: 10px;">Incremental: {{ dbt.incremental }}</div>
+      {% endif %}
+
+      {% if dbt.security %}
+      <div class="text-gray-400" style="padding-left: 10px;">Security: {{ dbt.security }}</div>
+      {% endif %}
+
+      {% if dbt.partitionExpirationDays %}
+      <div class="text-gray-400" style="padding-left: 10px;">Partition Expiration: {{ dbt.partitionExpirationDays }}</div>
+      {% endif %}
+
+      {% if dbt.recencyThreshold %}
+      <div class="text-gray-400" style="padding-left: 10px;">Recency Threshold: {{ dbt.recencyThreshold }}</div>
+      {% endif %}
+
+      {% if dbt.recencyField %}
+      <div class="text-gray-400" style="padding-left: 10px;">Recency Field: {{ dbt.recencyField }}</div>
+      {% endif %}
+
+      {% if dbt.filters %}
+      <div class="text-gray-400" style="padding-left: 10px;">Filters:
+        {% for filter in dbt.filters %}
+        <div style="padding-left: 10px;">
+          {{ filter.field }} {{ filter.operator }} {% if filter.value %}{{ filter.value }}{% endif %} {% if filter.dev_only %}[DEV only]{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+</div>

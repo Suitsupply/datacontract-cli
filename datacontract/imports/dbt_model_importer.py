@@ -20,7 +20,7 @@ class DbtModelImporter(Importer):
 
 def _get_doc_ref(description, documentation_yaml):
     
-    if not documentation_yaml:
+    if not documentation_yaml or not description:
         return description
 
     #Extracts a documentation reference from a description string.

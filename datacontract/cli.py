@@ -32,6 +32,7 @@ app = typer.Typer(
     cls=OrderedCommands,
     no_args_is_help=True,
     add_completion=False,
+    pretty_exceptions_show_locals=False
 )
 
 
@@ -209,7 +210,7 @@ def export(
     template: Annotated[
         Optional[Path],
         typer.Option(help="[custom] The file path of Jinja template."),
-    ] = None,
+    ] = None,   
 ):
     """
     Convert data contract to a specific format. Saves to file specified by `output` option if present, otherwise prints to stdout.
@@ -297,6 +298,14 @@ def import_(
         str,
         typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
     ] = None,
+    server: Annotated[
+        Optional[str],
+        typer.Option(help="The server name to import from Source data contract."),
+    ] = None,
+    model: Annotated[
+        Optional[str],
+        typer.Option(help="The model name to import from Source data contract and provided Server."),
+    ] = None,
 ):
     """
     Create a data contract from the given source location. Saves to file specified by `output` option if present, otherwise prints to stdout.
@@ -316,13 +325,30 @@ def import_(
         dbml_schema=dbml_schema,
         dbml_table=dbml_table,
         iceberg_table=iceberg_table,
+        server=server,
+        model=model,
     )
     if output is None:
         console.print(result.to_yaml(), markup=False, soft_wrap=True)
     else:
-        with output.open(mode="w", encoding="utf-8") as f:
+        output_path = Path(output)
+        
+        # If path is relative and we have a source, use source's directory as base
+        if not output_path.is_absolute() and source:
+            source_path = Path(source)
+            if source_path.is_file():
+                output_path = source_path.parent / output_path
+        
+        # Create parent directories if needed
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        # If output points to a directory, append default filename
+        if output_path.is_dir():
+            output_path = output_path / "datacontract.yml"
+            
+        with output_path.open(mode="w", encoding="utf-8") as f:
             f.write(result.to_yaml())
-        console.print(f"Written result to {output}")
+        console.print(f"Written result to {output_path}")
 
 
 @app.command(name="publish")

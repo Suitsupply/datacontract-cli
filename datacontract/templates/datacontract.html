@@ -144,9 +144,9 @@
                       <tbody class="divide-y divide-gray-200 bg-white">
                       {% for field_name, field in model.fields.items() %}
                         {{ render_partial('partials/model_field.html', nested = False, field_name=field_name, field = field, level = 0) }}
-                      {% endfor %}
+                      {% endfor %}             
                       </tbody>
-                      {% if model.primaryKey or model.quality %}
+                      {% if model.primaryKey or model.quality or model.config %}
                       <tfoot class="divide-y divide-gray-200 bg-white">
                       {% if model.quality %}
                       {% for quality in model.quality %}
@@ -164,6 +164,15 @@
                         <th scope="colgroup" colspan="4"
                             class="py-2 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">
                           <span>Primary Key: {{ model.primaryKey }}</span>
+                        </th>
+                      </tr>
+                      {% endif %}
+
+                      {% if model.config %}
+                      <tr class="bg-gray-50">
+                        <th scope="colgroup" colspan="4"
+                            class="py-2 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">
+                          {{ render_partial('partials/model_dbt.html', model_config = model.config)}}
                         </th>
                       </tr>
                       {% endif %}

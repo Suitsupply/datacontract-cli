@@ -31,6 +31,7 @@ class ModelConfigDBTExtended(pyd.BaseModel):
 
 class ModelConfigDBT(pyd.BaseModel):
     enabled: bool | None = None
+    frequency: str | None = 'DAILY'
     filters: List[FilterDBT] = None
     typeOverwrite: bool | None = None
     snapshot: bool | None = None
@@ -73,7 +74,7 @@ class FieldConfigDBT(pyd.BaseModel):
     pivot: bool | None = None
     pivotKeyField: str | None = None
     pivotKeyFilter: str | None = None
-    pivotValueField: str | None = None
+    piovtValueField: str | None = None
     security: str | None = None
     bigqueryType: str | None = None
     meta: Dict[str, Any] = {}  # Contains: owner, owner_email, security

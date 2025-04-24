@@ -39,12 +39,10 @@ class OrderEnum(str, Enum):
     DESC = 'DESC'
 
 class Enabled(str, Enum):
-    NULL = 'NULL'
     ENABLED = 'ENABLED'
     DISABLED = 'DISABLED'
 
 class FrequencyEnum(str, Enum):
-    NULL = 'NULL'
     HOURLY = 'HOURLY'
     DAILY = 'DAILY'    
     WEEKLY = 'WEEKLY'
@@ -53,7 +51,6 @@ class FrequencyEnum(str, Enum):
     TRIGGER_GA = 'TRIGGER_GA'
 
 class RefreshModeEnum(str, Enum):
-    NULL = 'NULL'
     INCREMENTAL = 'INCREMENTAL'
     LIVE = 'LIVE'
     FULL = 'FULL'
@@ -68,14 +65,14 @@ class Ownership(BaseModel):
     team: str
     email: str
 
-class Field(BaseModel):
+class FieldAlpha(BaseModel):
     class Config:
         extra = 'forbid' 
     name: str
     description: Optional[str] = None
     mode: Optional[FieldModeEnum] = FieldModeEnum.NULLABLE
     type: FieldTypeEnum
-    fields: Optional[list[Field]] = []
+    fields: Optional[list[FieldAlpha]] = []
     alias: Optional[str] = None
     repeated: Optional[bool] = False
     index: Optional[int] = -1
@@ -101,42 +98,36 @@ class SourceSchema(BaseModel):
     primary_keys: Optional[list[str]] = []
     recency_validation: Optional[str] = None
     order_by: Optional[str] = None
-    fields: list[Field]
+    fields: list[FieldAlpha]
     filters: Optional[list[Filter]] = []
 
 class RefreshPolicy(BaseModel):
     class Config:
         extra = 'forbid'   
-    frequency: Optional[FrequencyEnum] = FrequencyEnum.NULL
-    data_type_overwrite: Optional[Enabled] = Enabled.NULL 
-    snapshot_status: Optional[Enabled] = Enabled.NULL
-    deduplication: Optional[Enabled] = Enabled.NULL 
-    refresh_mode: Optional[RefreshModeEnum] = RefreshModeEnum.NULL    
+    frequency: Optional[FrequencyEnum] = None
+    data_type_overwrite: Optional[Enabled] = None 
+    snapshot_status: Optional[Enabled] = None
+    deduplication: Optional[Enabled] = None 
+    refresh_mode: Optional[RefreshModeEnum] = None    
     cluster_by: Optional[list[str]] = []
     recency_threshold: Optional[int] = None
     partition_expiration_days: Optional[int] = None
 
-class ConfigContract(BaseModel):
+class ConfigContractAlpha(BaseModel):
     class Config:
         extra = 'forbid' 
-
     entity: str
     description: str
     project: Optional[str] = None
-
     product: str
     dataset: Optional[str] = None
     identifier: Optional[str] = None
-    
     contains_pii: Optional[bool] = False
     security: Optional[str] = None
-
     ownership: Ownership
     refresh_policy: Optional[RefreshPolicy] = RefreshPolicy()
-    
-    source_schema_root_field: Optional[Field] = None
+    source_schema_root_field: Optional[FieldAlpha] = None
     source_schema: SourceSchema
-
     @model_validator(mode="after")  # Validate after all fields are initialized
     def validate_model(cls, values):
         # Validate entity and product naming convention
@@ -152,39 +143,25 @@ class ConfigContract(BaseModel):
                 f"only lowercase letters, numbers, and underscores are allowed, "
                 f"and it must start with a letter or an underscore."
             )
-
         # Additional checks for 'entity'
         if values.dataset == "datastream_mao" and values.entity.startswith("default_"):
             raise ValueError(
                 f"For MAO tables, the 'entity' field cannot start with 'default_'. "
                 f"The prefix '{'_'.join(values.entity.split('_')[:2])}_' should be excluded from the 'entity' value ('{values.entity}')."
             )
-
-        # if values.entity.startswith(f'{values.product}_'):
-        #     raise ValueError(
-        #         f"The 'entity' field ({values.entity}) cannot start with the value of the 'product' field ('{values.product}'). "
-        #         f"Ensure 'entity' and 'product' are distinct because they are combined to create the table name as 'product_entity'."
-        #     )
-
         return values
-
     @classmethod
     def from_file(cls, file):
         if not os.path.exists(file):
             raise Exception(f"The file '{file}' does not exist.")
         with open(file, "r", newline='') as file:
             file_content = file.read()
-        SourceSchema.model_rebuild()
-        return ConfigContract.from_string(file_content)
-
+        return ConfigContractAlpha.from_string(file_content)
     @classmethod
     def from_string(cls, data_contract_str):
         data = yaml.safe_load(data_contract_str)
-        SourceSchema.model_rebuild()
-        return ConfigContract(**data)
-    
+        return ConfigContractAlpha.model_validate(data)
     def to_yaml(self):
         return yaml.dump(self.model_dump(exclude_defaults=True, exclude_none=True), sort_keys=False, allow_unicode=True)    
-    
 # parsed = json.loads(ConfigContract.schema_json())
 # print(json.dumps(parsed, indent=2))

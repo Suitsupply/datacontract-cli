@@ -43,8 +43,11 @@ def import_dbt_model(
     documentation_yaml = {}
     documentation_yaml_path = yaml.safe_load(os.environ.get('DOCUMENTATION_YAML_PATH', ''))
     if documentation_yaml_path:
-        with open(documentation_yaml_path, 'r') as file:
-            documentation_yaml = yaml.safe_load(file)
+        try:
+            with open(documentation_yaml_path, 'r') as file:
+                documentation_yaml = yaml.safe_load(file)
+        except FileNotFoundError:
+            documentation_yaml = {}
 
     # Process data contract models
     for dbt_model in source_file.get('models', []):

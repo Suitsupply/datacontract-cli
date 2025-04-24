@@ -1,8 +1,6 @@
 import re, yaml, os
 from typing import Dict, List
 
-from datacontract.imports.dbt_specification_importer import import_dbt_specification
-
 from datacontract.export.exporter import Exporter
 from datacontract.model.exceptions import DataContractException
 
@@ -148,7 +146,7 @@ def convert_to_dbt_specification(
         model_config.extended.sql_table_name = f"`{model_config.extended.source_project}.{model_config.extended.source_dataset}.{dbt_model_identifier}`"
                 
         model_config.loader = 'unknown' if not model_config.loader else model_config.loader
-        model_config.extended.product = data_contract_spec.id
+        model_config.extended.product = data_contract_model.namespace if data_contract_model.namespace else data_contract_spec.id
         model_config.extended.entity = data_contract_model.title
 
         model_config.extended.entity_label = model_config.extended.entity
@@ -196,12 +194,9 @@ def convert_to_dbt_specification(
             model_config.meta['owner_email'] = data_contract_spec.info.contact.email if data_contract_spec.info.contact else 'unknown'
             model_config.meta['security'] = model_config.security
             
-            if data_contract_spec.servicelevels and data_contract_spec.servicelevels.frequency:
-                data_contract_model.tags.append(data_contract_spec.servicelevels.frequency.interval)
-            else:
-                data_contract_model.tags.append('DAILY')
-            data_contract_model.tags.extend([ model_config.extended.product, model_config.loader])
-        
+            data_contract_model.tags.append(model_config.frequency)
+            
+            data_contract_model.tags.extend([ model_config.loader, model_config.extended.product])
 
         if model_config.recencyThreshold == None:
             if  data_contract_spec.servicelevels and \
@@ -426,7 +421,8 @@ def _get_dbt_fields_bigquery(
 
             dbt_field.type = field.type
 
-            field_type = map_type_to_bigquery(field).upper()
+            field_type_converted = map_type_to_bigquery(field)
+            field_type = field_type_converted.upper() if field_type_converted else field_type.upper()
             field_config.bigqueryType = field_type
 
             # Type conversion.

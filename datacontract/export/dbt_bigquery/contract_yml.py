@@ -46,7 +46,7 @@ def contract_yml(data_contract_model: Model, model_name: str) -> str:
         
         column = {
             "name": field.title
-            ,"description": field.description
+            ,"description": field.description.strip() if field.description else field.description
             ,"data_type": field_config.bigqueryType
             ,"data_tests": tests
             ,"constraints": constraints
@@ -68,7 +68,7 @@ def contract_yml(data_contract_model: Model, model_name: str) -> str:
         ,"models":[{
             "name": model_name
             ,"config": config
-            ,"description": data_contract_model.description
+            ,"description": data_contract_model.description.strip() if data_contract_model.description else data_contract_model.description
             ,"meta": model_config.meta
             ,"data_tests": model_tests
             ,"columns": fields

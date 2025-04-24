@@ -1,6 +1,6 @@
 from datacontract.imports.importer import Importer
 from datacontract.model.data_contract_specification import DataContractSpecification, Model, Field, Info, ServiceLevel, Freshness, Retention
-from datacontract.model.contract_alpha_specification import ConfigContract as ContractAlpha, Field as FieldAlpha
+from datacontract.model.alpha_contract_specification import FieldAlpha, ConfigContractAlpha
 from datacontract.model.exceptions import DataContractException
 
 from datacontract.model.config_dbt import FieldConfigDBT, ModelConfigDBT, FilterDBT
@@ -10,7 +10,8 @@ class ContractAlphaImporter(Importer):
     def import_source(
         self, data_contract_specification: DataContractSpecification, source: str, import_args: dict
     ) -> DataContractSpecification:
-        return import_contract(data_contract_specification, source)
+        return import_contract_alpha(data_contract_specification, source)
+
 
 def import_fields_alpha(
         fields_alpha: list[FieldAlpha],
@@ -187,11 +188,12 @@ def map_type_from_bigquery(bigquery_type_str: str):
         )
 
 
-def import_contract(data_contract_specification: DataContractSpecification, source: str) -> DataContractSpecification:
+def import_contract_alpha(data_contract_specification: DataContractSpecification, source: str) -> DataContractSpecification:
+    
     if data_contract_specification.models is None:
         data_contract_specification.models = {}
 
-    model_alpha = ContractAlpha.from_file(source)
+    model_alpha = ConfigContractAlpha.from_file(source)
 
     ephemerals = {}
     model_config = ModelConfigDBT()
@@ -237,8 +239,8 @@ def import_contract(data_contract_specification: DataContractSpecification, sour
         model_config.recencyThreshold = model_alpha.refresh_policy.recency_threshold
     if model_alpha.source_schema.recency_validation:
         model_config.recencyField = model_alpha.source_schema.recency_validation
-    else:
-        model_config.recencyField = '_loaded_at'    
+    if model_alpha.refresh_policy.frequency:
+        model_config.frequency = model_alpha.refresh_policy.frequency
 
     servicelevels=ServiceLevel()
 
@@ -268,6 +270,7 @@ def import_contract(data_contract_specification: DataContractSpecification, sour
                 title=f"{model_alpha.entity}",
                 primaryKey=primary_keys,
                 fields=fields,
+                namespace=model_alpha.product
             )
         },
     )

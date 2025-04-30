@@ -4,7 +4,6 @@ from typing import Dict, List
 from datacontract.export.exporter import Exporter
 from datacontract.model.exceptions import DataContractException
 
-from datacontract.model.dbt_data_contract_specification import DataContractSpecification
 from datacontract.export.bigquery_converter import map_type_to_bigquery
 
 from datacontract.model.data_contract_specification import DataContractSpecification, Server, Field, Model

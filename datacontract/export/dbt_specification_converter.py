@@ -418,7 +418,7 @@ def _get_dbt_fields_bigquery(
                 , joins=joins
                 , security_masks=security_masks
                 , is_parent_json=is_json
-                , pivot_source_field=quote_name(pivot_source_field)
+                , pivot_source_field=pivot_source_field
                 , data_type_overwrite=data_type_overwrite
                 , truncate_timestamp=truncate_timestamp
                 , source_prefix=nested_prefix
@@ -438,7 +438,11 @@ def _get_dbt_fields_bigquery(
             dbt_field.type = field.type
 
             field_type_converted = map_type_to_bigquery(field)
-            field_type = field_type_converted.upper() if field_type_converted else field.type.upper()
+            if field.type and field_type_converted != 'variant':
+                field_type = field_type_converted.upper() if field_type_converted else field.type.upper()
+            else:
+                field_type = 'STRING'
+
             field_config.bigqueryType = field_type
 
             # Type conversion.
@@ -451,13 +455,17 @@ def _get_dbt_fields_bigquery(
                 if is_calculated:
                     field_source_prefix = ''
 
-                pivot_field = f"{field_source_prefix}{field_config.pivotValueField}"
+                if field_config.calculation:
+                    pivot_field = f"{field_source_prefix}{field_config.calculation}"
+                else:
+                    pivot_field = f"{field_source_prefix}{quote_name(field_config.pivotValueField)}"
+ 
                 json_unnest_prefix = ''
-                sql_column_filter = f"(__unnested.{field_config.pivotKeyField}) = {field_config.pivotKeyFilter}"
+                sql_column_filter = f"(__unnested.{quote_name(field_config.pivotKeyField)}) = {field_config.pivotKeyFilter}"
                 
                 if is_json:
                     json_unnest_prefix = 'json_extract_array'
-                    sql_column_filter = f"LAX_STRING(__unnested.{field_config.pivotKeyField}) = '{field_config.pivotKeyFilter.replace("'", "")}'"
+                    sql_column_filter = f"LAX_STRING(__unnested.{quote_name(field_config.pivotKeyField)}) = '{field_config.pivotKeyFilter.replace("'", "")}'"
                     pivot_field = _json_to_scalar_bigquery(pivot_field, field_type, truncate_timestamp = truncate_timestamp)
 
                 cast_field_source = f"( select {pivot_field} from unnest({json_unnest_prefix}({pivot_source_field})) as __unnested where {sql_column_filter} )"

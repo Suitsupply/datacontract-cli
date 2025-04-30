@@ -94,8 +94,7 @@ def convert_to_dbt_specification(
 
     # Add server data if missing
     data_server = data_contract_spec.servers.get(server, Server()) if data_contract_spec.servers else Server()
-    source_server = data_contract_spec.servers.get('source',  Server()) if data_contract_spec.servers else Server()
-
+    
     # Get security masks from environment variable
     security_yaml = {}
     security_yaml_path = yaml.safe_load(os.environ.get('SECURITY_YAML_PATH', ''))
@@ -133,7 +132,7 @@ def convert_to_dbt_specification(
 
         if not data_contract_model.title:
             data_contract_model.title = model_name
-        dbt_model_identifier = model_config.bigqueryTable if model_config.bigqueryTable else model_name
+        dbt_model_identifier = model_config.sourceTable if model_config.sourceTable else model_name
 
         if model_config.deduplicate:
             if not model_config.orderBy:
@@ -190,8 +189,11 @@ def convert_to_dbt_specification(
 
             if not model_config.meta:
                 model_config.meta = {}
-            model_config.meta['owner'] = data_contract_spec.info.owner
-            model_config.meta['owner_email'] = data_contract_spec.info.contact.email if data_contract_spec.info.contact else 'unknown'
+            if not model_config.meta.get('owner'):
+                model_config.meta['owner'] = data_contract_spec.info.owner
+            if not model_config.meta.get('owner_email'):
+                model_config.meta['owner_email'] = data_contract_spec.info.contact.email if data_contract_spec.info.contact else 'unknown'
+            
             model_config.meta['security'] = model_config.security
             
             data_contract_model.tags.append(model_config.frequency)
@@ -219,7 +221,7 @@ def convert_to_dbt_specification(
                     )
 
         dbt_fields = {}
-        truncate_timestamp = source_server.type in ["cosmosdb"]
+        truncate_timestamp = data_server.dataset == 'cosmosdb'
         
         # Server ephemerals (metadata)
         _get_dbt_fields_bigquery(
@@ -273,15 +275,25 @@ def convert_to_dbt_specification(
                 )
 
         data_contract_model.fields = dbt_fields
+
         model_config.ephemerals = None
 
         if server == 'landing':
-            model_config.labels['contains_pii'] = 'no'
-            for field_key, field in dbt_fields.items():
-                if field.pii:
-                    model_config.labels['contains_pii'] = 'yes'
-                    data_contract_model.tags.append('pii')
-                    break
+            
+            if not model_config.labels.get('contains_pii'):
+            
+              model_config.labels['contains_pii'] = 'no'
+
+            #     for field_key, field in dbt_fields.items():
+            #         if field.pii:
+            #             model_config.labels['contains_pii'] = 'yes'
+            #             break
+
+            # Temporary reorder labels for internal validation
+            contains_pii = model_config.labels.pop('contains_pii')
+            if contains_pii == 'yes':
+                data_contract_model.tags.append('contains_pii')
+            model_config.labels['contains_pii'] = contains_pii
 
         data_contract_model.config = model_config.model_dump(exclude_none=True, exclude_defaults=True)
         data_contract_spec.models[model_name] = data_contract_model
@@ -422,16 +434,15 @@ def _get_dbt_fields_bigquery(
             dbt_field.type = field.type
 
             field_type_converted = map_type_to_bigquery(field)
-            field_type = field_type_converted.upper() if field_type_converted else field_type.upper()
+            field_type = field_type_converted.upper() if field_type_converted else field.type.upper()
             field_config.bigqueryType = field_type
 
             # Type conversion.
-            if is_json and not is_calculated and field_config.pivotKeyFilter is None:
-                #print(f"field: {field_name}, is_json: {is_json}, field_source: {field_source}")
+            if is_json and not is_calculated and field_config.pivotKeyFilter is None and field_category in ['data', 'metadata']:
                 cast_field_source = _json_to_scalar_bigquery(field_source, field_type, truncate_timestamp=truncate_timestamp)
-            elif not is_json and (is_calculated or data_type_overwrite) and field_config.pivotKeyFilter is None and field.title != '_primary_key':
+            elif not is_json and (is_calculated or data_type_overwrite) and field_config.pivotKeyFilter is None and field_category in ['data', 'metadata']:
                 cast_field_source = f"cast( {field_source:<28}{' as ' + field_type.lower() + ' )':<20}"
-            elif pivot_source_field is not None and field_config.pivotKeyFilter is not None:
+            elif pivot_source_field is not None and field_config.pivotKeyFilter is not None and field_category in ['data', 'metadata']:
                 field_source_prefix = '__unnested.'
                 if is_calculated:
                     field_source_prefix = ''

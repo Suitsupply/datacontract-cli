@@ -14,11 +14,26 @@ class DbtModelImporter(Importer):
     def import_source(
         self, data_contract_specification: DataContractSpecification, source: str, import_args: dict
     ) -> DataContractSpecification:
-            
-        return import_dbt_model(data_contract_specification, source=source)
+
+        documentation_yaml = get_dbt_documentation_yaml()
+        return import_dbt_model(data_contract_specification, source=source, documentation_yaml=documentation_yaml)
 
 
-def _get_doc_ref(description, documentation_yaml):
+def get_dbt_documentation_yaml(file_path = None) -> dict:
+
+    documentation_yaml = {}
+    documentation_yaml_path = yaml.safe_load(file_path) if file_path else yaml.safe_load(os.environ.get('DOCUMENTATION_YAML_PATH', ''))
+    if documentation_yaml_path:
+        try:
+            with open(documentation_yaml_path, 'r') as file:
+                documentation_yaml = yaml.safe_load(file)
+        except FileNotFoundError:
+            documentation_yaml = {}
+
+    return documentation_yaml
+
+
+def get_doc_ref(description, documentation_yaml):
     
     if not documentation_yaml or not description:
         return description
@@ -35,19 +50,11 @@ def _get_doc_ref(description, documentation_yaml):
 def import_dbt_model(
         data_contract_spec: DataContractSpecification,
         source: str,
+        documentation_yaml: dict = {}
         ) -> DataContractSpecification: 
 
     with open(source, 'r') as file:
         source_file = yaml.safe_load(file)
-
-    documentation_yaml = {}
-    documentation_yaml_path = yaml.safe_load(os.environ.get('DOCUMENTATION_YAML_PATH', ''))
-    if documentation_yaml_path:
-        try:
-            with open(documentation_yaml_path, 'r') as file:
-                documentation_yaml = yaml.safe_load(file)
-        except FileNotFoundError:
-            documentation_yaml = {}
 
     # Process data contract models
     for dbt_model in source_file.get('models', []):
@@ -58,7 +65,7 @@ def import_dbt_model(
         model_config = ModelConfigDBT()
 
         data_contract_model.title = dbt_model.get('config', {}).get('alias', dbt_model_name)
-        data_contract_model.description = _get_doc_ref(dbt_model.get('description'), documentation_yaml)
+        data_contract_model.description = get_doc_ref(dbt_model.get('description'), documentation_yaml)
 
         model_config.security = dbt_model.get('meta', {}).get('security', None)
         model_config.meta = dbt_model.get('meta', {})
@@ -74,7 +81,7 @@ def import_dbt_model(
 
             dbt_field = Field()
             dbt_field.title = dbt_field_name
-            dbt_field.description = _get_doc_ref(column.get('description', None), documentation_yaml)
+            dbt_field.description = get_doc_ref(column.get('description', None), documentation_yaml)
             dbt_field.type = map_type_from_sql(column.get('data_type'))
 
             field_config.meta = column.get('meta', {})

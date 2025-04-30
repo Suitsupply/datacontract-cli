@@ -32,7 +32,11 @@ def import_fields_alpha(
             
             if field_alpha.alias and field_alpha.alias != field_alpha.name:
                 field.title = field_title
+
             field.description = field_alpha.description
+            if field.description:
+                field.description = field.description.encode('ascii', 'ignore').decode('ascii').strip()
+
             if field_alpha.mode == 'REQUIRED':
                 field.required = True
             if field_title in primary_keys:
@@ -72,7 +76,7 @@ def import_fields_alpha(
                         else:
                             ephemeral = imported_ephemerals[field_alpha.name].model_copy()
 
-                        ephemeral.title = field.title
+                        #ephemeral.title = field.title
                         ephemeral.type = "record"
 
                         ephemeral_config = FieldConfigDBT()
@@ -109,6 +113,9 @@ def import_fields_alpha(
             if field_alpha.security:
                 field_config.security = field_alpha.security
 
+            if field_alpha.contains_pii:
+                field.pii = True
+
             if field_config != FieldConfigDBT():
                 field.config = field_config.model_dump(exclude_none=True, exclude_defaults=True)
             
@@ -135,7 +142,7 @@ def import_fields_alpha(
             ephemeral_config = FieldConfigDBT() if not ephemeral.config else FieldConfigDBT.model_validate(ephemeral.config)
             ephemeral_config.calculation = calculation
             ephemeral.config = ephemeral_config.model_dump(exclude_none=True, exclude_defaults=True)
-                             
+
             imported_ephemerals[field_alpha.alias] = ephemeral
 
     return imported_fields
@@ -200,8 +207,15 @@ def import_contract_alpha(data_contract_specification: DataContractSpecification
 
     title = model_alpha.entity if model_alpha.identifier is None else model_alpha.identifier
     description = model_alpha.description
+    if description:
+        description = description.encode('ascii', 'ignore').decode('ascii').strip()
+
     primary_keys = model_alpha.source_schema.primary_keys
     type = "table"
+
+    model_config.meta = {}
+    model_config.meta['owner'] = model_alpha.ownership.team
+    model_config.meta['owner_email'] = model_alpha.ownership.email
 
     fields = import_fields_alpha(model_alpha.source_schema.fields, ephemerals, primary_keys)
 
@@ -221,26 +235,47 @@ def import_contract_alpha(data_contract_specification: DataContractSpecification
 
     if model_alpha.refresh_policy.data_type_overwrite == 'ENABLED':
         model_config.typeOverwrite = True
+    elif model_alpha.refresh_policy.data_type_overwrite == 'DISABLED':
+        model_config.typeOverwrite = False
+
     if model_alpha.refresh_policy.snapshot_status == 'ENABLED':
         model_config.snapshot = True
+    elif model_alpha.refresh_policy.snapshot_status == 'DISABLED':
+        model_config.snapshot = False
+
     if model_alpha.refresh_policy.deduplication == 'ENABLED':
         model_config.deduplicate = True
+    elif model_alpha.refresh_policy.deduplication == 'DISABLED':
+        model_config.deduplicate = False
+
     if model_alpha.source_schema.order_by:
         model_config.orderBy = model_alpha.source_schema.order_by
+
     if model_alpha.refresh_policy.cluster_by:
         model_config.clusterBy = model_alpha.refresh_policy.cluster_by
+
     if model_alpha.refresh_policy.refresh_mode == 'INCREMENTAL':
         model_config.incremental = True
+
     if model_alpha.security:
         model_config.security = model_alpha.security
-    if model_alpha.refresh_policy.partition_expiration_days:
+
+    if model_alpha.refresh_policy.partition_expiration_days is not None:
         model_config.partitionExpirationDays = model_alpha.refresh_policy.partition_expiration_days
-    if model_alpha.refresh_policy.recency_threshold:
+
+    if model_alpha.refresh_policy.recency_threshold is not None:
         model_config.recencyThreshold = model_alpha.refresh_policy.recency_threshold
+
     if model_alpha.source_schema.recency_validation:
         model_config.recencyField = model_alpha.source_schema.recency_validation
+        
     if model_alpha.refresh_policy.frequency:
         model_config.frequency = model_alpha.refresh_policy.frequency
+
+    if model_alpha.contains_pii:
+        if not model_config.labels:
+            model_config.labels = {}
+        model_config.labels['contains_pii'] = 'yes'
 
     servicelevels=ServiceLevel()
 

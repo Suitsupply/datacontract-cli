@@ -20,18 +20,22 @@ def import_contract_model(
     # Load the YAML file
     import_contract_spec = DataContractSpecification.from_file(source)
 
-    if model == 'all':
-        for model_name, data_contract_model in import_contract_spec.models.items():
-            data_contract_spec.models[model_name] = data_contract_model
-    else:
-        if model not in import_contract_spec.models:
-            raise DataContractException(
-                type="schema",
-                name="Import contract model",
-                reason=f"Model '{model}' not found in the contract model specification.",
-                engine="datacontract",
-            )
-        data_contract_spec.models[model] = import_contract_spec.models[model]
+    for model_name, data_contract_model in import_contract_spec.models.items():
+
+        if model != 'all' and model_name != model:
+            continue
+
+        adjustmed_model_name = model_name
+        if model_name in data_contract_spec.models:
+            suffix = 1
+            while f"{model_name}_{suffix}" in data_contract_spec.models:
+                suffix += 1
+
+            adjustmed_model_name = f"{model_name}_{suffix}"
+            model_config = data_contract_model.config or {}
+            model_config.setdefault('sourceTable', model_name)
+            data_contract_model.config = model_config
+
+        data_contract_spec.models[adjustmed_model_name] = data_contract_model
 
     return data_contract_spec
-    

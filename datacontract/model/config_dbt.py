@@ -43,7 +43,7 @@ class ModelConfigDBT(pyd.BaseModel):
     partitionExpirationDays: int | None = None
     recencyThreshold: int | None = None
     recencyField: str | None = None
-    bigqueryTable: str | None = None
+    sourceTable: str | None = None
     ephemerals: Dict[str, Field] = None
     
     loader: Optional[str] = None

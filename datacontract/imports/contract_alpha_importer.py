@@ -28,7 +28,7 @@ def import_fields_alpha(
 
         field_title = field_alpha.alias if field_alpha.alias is not None else field_alpha.name
         
-        if not field_alpha.calculated:
+        if not field_alpha.calculated or field_alpha.pivot:
             
             if field_alpha.alias and field_alpha.alias != field_alpha.name:
                 field.title = field_title
@@ -60,35 +60,23 @@ def import_fields_alpha(
                     field.items = Field()
                     field.items.type = "record"
 
-                    field.items.fields = import_fields_alpha(field_alpha.fields, imported_ephemerals, primary_keys)
-
                     # Unpack single record in array
                     if field_alpha.index >= 0:
                         field_config.index = field_alpha.index
 
                     # Pivot array with calculated fields (ephemerals)
                     if field_alpha.pivot:
-                        field_config.enabled = False
                         field_config.pivot = True
 
-                        if imported_ephemerals.get(field_alpha.name) is None:
-                            ephemeral = Field()
-                        else:
-                            ephemeral = imported_ephemerals[field_alpha.name].model_copy()
+                        ephemerals = {}
 
-                        #ephemeral.title = field.title
-                        ephemeral.type = "record"
-
-                        ephemeral_config = FieldConfigDBT()
-                        ephemeral_config.pivot = True                        
-
-                        if field_alpha.type == "JSON":
-                            ephemeral_config.bigqueryType = "json"
-                        
                         for nested_field in field_alpha.fields:
+
+                            
                             nested_ephemeral = Field()
                             nested_field_title = field_alpha.name if nested_field.alias is None else nested_field.alias
                             nested_ephemeral.type = map_type_from_bigquery(nested_field.type)
+                            nested_ephemeral.description = nested_field.description
                             
                             nested_ephemeral_config = FieldConfigDBT()                            
                             nested_ephemeral_config.pivotKeyField = nested_field.base_field
@@ -97,14 +85,17 @@ def import_fields_alpha(
                             if nested_field.security:
                                 nested_ephemeral_config.security = nested_field.security
 
+                            if nested_field.calculated:
+                                nested_ephemeral_config.calculation = nested_field.name
+
                             nested_ephemeral.config = nested_ephemeral_config.model_dump(exclude_none=True, exclude_defaults=True)
 
-                            ephemeral.fields[nested_field_title] = nested_ephemeral
+                            ephemerals[nested_field_title] = nested_ephemeral
 
-                        if ephemeral_config != FieldConfigDBT():
-                            ephemeral.config = ephemeral_config.model_dump(exclude_none=True, exclude_defaults=True)
-
-                        imported_ephemerals[field_alpha.name] = ephemeral
+                        if ephemerals:
+                            field_config.ephemerals = ephemerals
+                    else:
+                        field.items.fields = import_fields_alpha(field_alpha.fields, imported_ephemerals, primary_keys)
 
                 else:
                     field.type = "record"
@@ -122,7 +113,7 @@ def import_fields_alpha(
             imported_fields[field_alpha.name] = field
         
         # Add calculated fields
-        else:
+        elif not field_alpha.pivot:
             if not field_alpha.alias:
                 raise DataContractException(
                     type="schema",
@@ -320,3 +311,9 @@ def import_contract_alpha(data_contract_specification: DataContractSpecification
         data_contract_specification.models[title].config = model_config.model_dump(exclude_none=True, exclude_defaults=True)
 
     return data_contract_specification
+
+
+# import_contract_alpha(
+#     data_contract_specification=DataContractSpecification(),
+#     source="schema.yml",
+# )

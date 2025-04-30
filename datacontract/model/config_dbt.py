@@ -78,6 +78,7 @@ class FieldConfigDBT(pyd.BaseModel):
     security: str | None = None
     bigqueryType: str | None = None
     meta: Dict[str, Any] = {}  # Contains: owner, owner_email, security
+    ephemerals: Dict[str, "Field"] = {}
     
     # Generated config properties from data_contract specification import
     extended: Optional[FieldConfigDBTExtended] = None

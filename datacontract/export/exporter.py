@@ -44,6 +44,7 @@ class ExportFormat(str, Enum):
     markdown = "markdown"
     iceberg = "iceberg"
     custom = "custom"
+    dbt_specification = "dbt-specification"
     dbt_spec_data_source_yml = "dbt-spec-data-source-yml"
     dbt_spec_raw_sql = "dbt-spec-raw-sql"
     dbt_spec_raw_yml = "dbt-spec-raw-yml"

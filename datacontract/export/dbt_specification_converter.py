@@ -37,6 +37,8 @@ CONTRACT_MAPPING = {
 class DbtSpecificationExporter(Exporter):
     
     def export(self, data_contract: DataContractSpecification, model, server, sql_server_type, export_args) -> dict:
+        if self.export_format == 'dbt-specification':
+            return convert_to_dbt_specification(data_contract, server=server).model_dump(exclude_none=True, exclude_defaults=True)
 
         if self.export_format not in CONTRACT_MAPPING:
             raise DataContractException(
@@ -84,6 +86,7 @@ def to_dbt_file(data_contract: DataContractSpecification, format: str, server: s
     func = CONTRACT_MAPPING.get(format)
     
     return func(data_contract.models[process_model])
+
 
 def convert_to_dbt_specification(
         data_contract_spec: DataContractSpecification
@@ -352,9 +355,6 @@ def _get_dbt_fields_bigquery(
         field_config = FieldConfigDBT.model_validate(field.config if field.config else {})
         field_config.extended = FieldConfigDBTExtended()
 
-        if field_config.enabled == False:
-            continue
-
         if server != 'landing' and field_name.startswith('_'):
             continue
 
@@ -377,7 +377,11 @@ def _get_dbt_fields_bigquery(
         is_repeated = False
         nested_fields = {}
 
-        if field.type == 'array' and len(field.items.fields) > 0:
+        if field.type == 'array' and field_config.pivot:
+            is_complex_field = True
+            is_repeated = False
+            nested_fields = field_config.ephemerals if field_config.ephemerals else {}
+        elif field.type == 'array' and len(field.items.fields) > 0:
             is_complex_field = True
             is_repeated = True
             nested_fields = field.items.fields
@@ -414,7 +418,7 @@ def _get_dbt_fields_bigquery(
                 , joins=joins
                 , security_masks=security_masks
                 , is_parent_json=is_json
-                , pivot_source_field=pivot_source_field
+                , pivot_source_field=quote_name(pivot_source_field)
                 , data_type_overwrite=data_type_overwrite
                 , truncate_timestamp=truncate_timestamp
                 , source_prefix=nested_prefix

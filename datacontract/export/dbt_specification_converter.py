@@ -465,7 +465,7 @@ def _get_dbt_fields_bigquery(
                 
                 if is_json:
                     json_unnest_prefix = 'json_extract_array'
-                    sql_column_filter = f"LAX_STRING(__unnested.{quote_name(field_config.pivotKeyField)}) = '{field_config.pivotKeyFilter.replace("'", "")}'"
+                    sql_column_filter = f'LAX_STRING(__unnested.{quote_name(field_config.pivotKeyField)}) = \'{field_config.pivotKeyFilter.replace("\'", "")}\''
                     pivot_field = _json_to_scalar_bigquery(pivot_field, field_type, truncate_timestamp = truncate_timestamp)
 
                 cast_field_source = f"( select {pivot_field} from unnest({json_unnest_prefix}({pivot_source_field})) as __unnested where {sql_column_filter} )"

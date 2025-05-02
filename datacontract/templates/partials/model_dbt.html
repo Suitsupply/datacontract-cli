@@ -1,0 +1,66 @@
+<div class=" px-4 sm:px-0">
+  <p class="text-sm text-gray-500">Model Config:</p>
+</div>
+
+  <div class="px-4 py-2 sm:px-6">
+
+      {% if model_config.enabled %}
+      <div class="text-gray-400" style="padding-left: 10px;">Enabled: {{ model_config.enabled }}</div>
+      {% endif %}
+
+      {% if model_config.typeOverwrite %}
+      <div class="text-gray-400" style="padding-left: 10px;">Type Overwrite: {{ model_config.typeOverwrite }}</div>
+      {% endif %}
+
+      {% if model_config.snapshot %}
+      <div class="text-gray-400" style="padding-left: 10px;">Snapshot: {{ model_config.snapshot }}</div>
+      {% endif %}
+
+      {% if model_config.deduplicate %}
+      <div class="text-gray-400" style="padding-left: 10px;">Deduplicate: {{ model_config.deduplicate }}</div>
+      {% endif %}
+
+      {% if model_config.orderBy %}
+      <div class="text-gray-400" style="padding-left: 10px;">Order By: {{ model_config.orderBy }}</div>
+      {% endif %}
+
+      {% if model_config.clusterBy %}
+      <div class="text-gray-400" style="padding-left: 10px;">Cluster By: {{ model_config.clusterBy }}</div>
+      {% endif %}
+
+      {% if model_config.incremental %}
+      <div class="text-gray-400" style="padding-left: 10px;">Incremental: {{ model_config.incremental }}</div>
+      {% endif %}
+
+      {% if model_config.security %}
+      <div class="text-gray-400" style="padding-left: 10px;">Security: {{ model_config.security }}</div>
+      {% endif %}
+
+      {% if model_config.partitionExpirationDays %}
+      <div class="text-gray-400" style="padding-left: 10px;">Partition Expiration: {{ model_config.partitionExpirationDays }}</div>
+      {% endif %}
+
+      {% if model_config.recencyThreshold %}
+      <div class="text-gray-400" style="padding-left: 10px;">Recency Threshold: {{ model_config.recencyThreshold }}</div>
+      {% endif %}
+
+      {% if model_config.recencyField %}
+      <div class="text-gray-400" style="padding-left: 10px;">Recency Field: {{ model_config.recencyField }}</div>
+      {% endif %}
+
+      {% if model_config.filters %}
+      <div class="text-gray-400" style="padding-left: 10px;">Filters:
+        {% for filter in model_config.filters %}
+        <div style="padding-left: 15px;">
+          {{ filter.field }} {{ filter.operator }} {% if filter.value %}{{ filter.value }}{% endif %} {% if filter.dev_only %}[DEV only]{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if model_config.ephemerals %}
+      <div class="text-gray-400" style="padding-left: 10px;">Ephemerals:</div>
+      <div class="text-gray-400" style="padding-left: 15px;">{{ model_config.ephemerals }}</div>
+      {% endif %}      
+
+</div>

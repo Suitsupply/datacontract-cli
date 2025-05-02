@@ -1,0 +1,37 @@
+<div class="text-gray-400">Field Config:</div>
+
+{% if field_config.enabled %}
+<div class="text-gray-400" style="padding-left: 10px;">Enabled: {{ field_config.enabled }}</div>
+{% endif %}
+  
+{% if field_config.index is defined andfield_config.index >= 0 %}
+<div class="text-gray-400" style="padding-left: 10px;">Index: {{ field_config.index }}</div>
+{% endif %}
+
+{% if field_config.calculation %}
+<div class="text-gray-400" style="padding-left: 10px;">Calculation: {{ field_config.calculation }}</div>
+{% endif %}
+
+{% if field_config.pivot %}
+<div class="text-gray-400" style="padding-left: 10px;">Pivot: {{ field_config.pivot }}</div>
+{% endif %}
+
+{% if field_config.pivotKeyField %}
+<div class="text-gray-400" style="padding-left: 10px;">Pivot Key Field: {{ field_config.pivotKeyField }}</div>
+{% endif %}
+
+{% if field_config.pivotKeyFilter %}
+<div class="text-gray-400" style="padding-left: 10px;">Pivot Key Filter: {{ field_config.pivotKeyFilter }}</div>
+{% endif %}
+
+{% if field_config.pivotValueField %}
+<div class="text-gray-400" style="padding-left: 10px;">Pivot Value Field: {{ field_config.pivotValueField }}</div>
+{% endif %}
+
+{% if field_config.security %}
+<div class="text-gray-400" style="padding-left: 10px;">Security: {{ field_config.security }}</div>
+{% endif %}
+
+{% if field_config.bigqueryType %}
+<div class="text-gray-400" style="padding-left: 10px;">BigQuery Type: {{ field_config.bigqueryType }}</div>
+{% endif %}

@@ -91,7 +91,7 @@ def map_type_to_bigquery(field: Field) -> str:
     elif field_type.lower() == "bytes":
         return "BYTES"
     elif field_type.lower() in ["int", "integer"]:
-        return "INTEGER"
+        return "INT64"
     elif field_type.lower() in ["long", "bigint"]:
         return "INT64"
     elif field_type.lower() == "float":
@@ -103,7 +103,7 @@ def map_type_to_bigquery(field: Field) -> str:
     elif field_type.lower() == "date":
         return "DATE"
     elif field_type.lower() == "timestamp_ntz":
-        return "TIME"
+        return "DATETIME"
     elif field_type.lower() in ["number", "decimal", "numeric"]:
         return "NUMERIC"
     elif field_type.lower() == "double":

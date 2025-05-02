@@ -44,6 +44,16 @@ class ExportFormat(str, Enum):
     markdown = "markdown"
     iceberg = "iceberg"
     custom = "custom"
+    dbt_specification = "dbt-specification"
+    dbt_spec_data_source_yml = "dbt-spec-data-source-yml"
+    dbt_spec_raw_sql = "dbt-spec-raw-sql"
+    dbt_spec_raw_yml = "dbt-spec-raw-yml"
+    dbt_spec_source_sql = "dbt-spec-source-sql"
+    dbt_spec_source_yml = "dbt-spec-source-yml"
+    dbt_spec_staging_sql = "dbt-spec-staging-sql"
+    dbt_spec_dwh_view_sql = "dbt-spec-dwh-view-sql"
+    dbt_spec_dwh_view_yml = "dbt-spec-dwh-view-yml"
+    dbt_spec_looker_base_view_lkml = "dbt-spec-looker-base-view-lkml"
 
     @classmethod
     def get_supported_formats(cls):

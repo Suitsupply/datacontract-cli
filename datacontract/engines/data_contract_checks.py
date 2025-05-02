@@ -95,9 +95,15 @@ def to_model_name(model_key, model_value, server_type):
     if server_type == "postgres" or server_type == "postgresql":
         if model_value.config is not None and "postgresTable" in model_value.config:
             return model_value.config["postgresTable"]
+    if server_type == "bigquery":
+        if model_value.config is not None and "bigqueryTable" in model_value.config:
+            return model_value.config["bigqueryTable"]
     if server_type == "mysql":
         if model_value.config is not None and "mysqlTable" in model_value.config:
             return model_value.config["mysqlTable"]        
+    if model_value.config is not None and "sourceTable" in model_value.config:
+        return model_value.config["sourceTable"]
+    
     return model_key
 
 

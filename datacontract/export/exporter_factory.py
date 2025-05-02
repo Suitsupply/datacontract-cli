@@ -198,3 +198,36 @@ exporter_factory.register_lazy_exporter(
 exporter_factory.register_lazy_exporter(
     name=ExportFormat.custom, module_path="datacontract.export.custom_converter", class_name="CustomExporter"
 )
+
+# Register DBT Specification Exporters for different formats
+exporter_factory.register_lazy_exporter(
+    name=ExportFormat.dbt_specification, module_path="datacontract.export.dbt_specification_converter", class_name="DbtSpecificationExporter"
+)
+
+exporter_factory.register_lazy_exporter(
+    name=ExportFormat.dbt_spec_data_source_yml, module_path="datacontract.export.dbt_specification_converter", class_name="DbtSpecificationExporter"
+)
+exporter_factory.register_lazy_exporter(
+    name=ExportFormat.dbt_spec_raw_sql, module_path="datacontract.export.dbt_specification_converter", class_name="DbtSpecificationExporter"
+)
+exporter_factory.register_lazy_exporter(
+    name=ExportFormat.dbt_spec_raw_yml, module_path="datacontract.export.dbt_specification_converter", class_name="DbtSpecificationExporter"
+)
+exporter_factory.register_lazy_exporter(
+    name=ExportFormat.dbt_spec_source_sql, module_path="datacontract.export.dbt_specification_converter", class_name="DbtSpecificationExporter"
+)
+exporter_factory.register_lazy_exporter(
+    name=ExportFormat.dbt_spec_source_yml, module_path="datacontract.export.dbt_specification_converter", class_name="DbtSpecificationExporter"
+)
+exporter_factory.register_lazy_exporter(
+    name=ExportFormat.dbt_spec_staging_sql, module_path="datacontract.export.dbt_specification_converter", class_name="DbtSpecificationExporter"
+)
+exporter_factory.register_lazy_exporter(
+    name=ExportFormat.dbt_spec_dwh_view_sql, module_path="datacontract.export.dbt_specification_converter", class_name="DbtSpecificationExporter"
+)
+exporter_factory.register_lazy_exporter(
+    name=ExportFormat.dbt_spec_dwh_view_yml, module_path="datacontract.export.dbt_specification_converter", class_name="DbtSpecificationExporter"
+)
+exporter_factory.register_lazy_exporter(
+    name=ExportFormat.dbt_spec_looker_base_view_lkml, module_path="datacontract.export.dbt_specification_converter", class_name="DbtSpecificationExporter"
+)
